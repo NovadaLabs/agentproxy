@@ -16,14 +16,18 @@ import {
 } from "./tools/index.js";
 import { VERSION } from "./config.js";
 
-// ─── API Keys — both available at novada.com ─────────────────────────────────
-// NOVADA_API_KEY  → Novada Scraper API (search) + Novada Browser API (render)
-// PROXY_API_KEY   → Novada Proxy Network (fetch, session)
-//                   Future: NOVADA_API_KEY will cover this too when Novada Web
-//                   Unblocker unifies auth. For now both come from novada.com.
+// ─── API Keys — all available at novada.com ───────────────────────────────────
+//
+// NOVADA_API_KEY      → Novada Scraper API (search)
+// NOVADA_PROXY_USER   → Residential proxy username (from Dashboard → Residential → Endpoint Generator)
+// NOVADA_PROXY_PASS   → Residential proxy password
+// NOVADA_BROWSER_WS   → Browser API WebSocket URL (from Dashboard → Browser API → Playground)
+//                       Example: wss://USER-zone-browser:PASS@upg-scbr.novada.com
 
 const NOVADA_API_KEY = process.env.NOVADA_API_KEY;
-const PROXY_API_KEY = process.env.PROXY_API_KEY ?? process.env.NOVADA_API_KEY; // fallback for future unification
+const NOVADA_PROXY_USER = process.env.NOVADA_PROXY_USER;
+const NOVADA_PROXY_PASS = process.env.NOVADA_PROXY_PASS;
+const NOVADA_BROWSER_WS = process.env.NOVADA_BROWSER_WS;
 
 // ─── Tool Definitions ────────────────────────────────────────────────────────
 
@@ -38,8 +42,7 @@ const TOOLS = [
         url: { type: "string", description: "The URL to fetch" },
         country: { type: "string", description: "2-letter country code: US, DE, JP, GB, BR, ... (195+ options)" },
         city: { type: "string", description: "City-level targeting: newyork, london, tokyo, ..." },
-        session_id: { type: "string", description: "Use the same ID across calls to stay on the same IP" },
-        asn: { type: "string", description: "Target a specific ISP/ASN number" },
+        session_id: { type: "string", description: "Use the same ID across calls to stay on the same IP (letters, numbers, underscores only — no hyphens)" },
         format: { type: "string", enum: ["markdown", "raw"], default: "markdown", description: "markdown strips HTML tags; raw returns full HTML" },
         timeout: { type: "number", default: 60, description: "Timeout in seconds (1-120)" },
       },
@@ -49,7 +52,7 @@ const TOOLS = [
   {
     name: "agentproxy_render",
     description:
-      "[BETA] Render a JavaScript-heavy page using Novada's Browser API (real Chromium, full JS execution). Use this for SPAs, React/Vue apps, and sites that require JavaScript to load content — like Zillow, BestBuy, or any page that shows blank without a browser. For static/HTML pages, agentproxy_fetch is faster and more reliable.",
+      "[BETA] Render a JavaScript-heavy page using Novada's Browser API (real Chromium, full JS execution). Use this for SPAs, React/Vue apps, and sites that require JavaScript to load content — like Zillow, BestBuy, or any page that shows blank without a browser. Requires NOVADA_BROWSER_WS env var (get from Dashboard → Browser API → Playground). For static/HTML pages, agentproxy_fetch is faster and more reliable.",
     inputSchema: {
       type: "object" as const,
       properties: {
@@ -136,23 +139,31 @@ class AgentProxyServer {
 
         switch (name) {
           case "agentproxy_fetch": {
-            if (!PROXY_API_KEY) return this.missingKeyError("PROXY_API_KEY", "fetch/session tools (proxy network)");
-            result = await agentproxyFetch(validateFetchParams(raw), PROXY_API_KEY);
+            if (!NOVADA_PROXY_USER || !NOVADA_PROXY_PASS) {
+              return this.missingProxyKeyError();
+            }
+            result = await agentproxyFetch(validateFetchParams(raw), NOVADA_PROXY_USER, NOVADA_PROXY_PASS);
             break;
           }
           case "agentproxy_render": {
-            if (!NOVADA_API_KEY) return this.missingKeyError("NOVADA_API_KEY", "render tool (Novada Browser API)");
-            result = await agentproxyRender(validateRenderParams(raw), NOVADA_API_KEY);
+            if (!NOVADA_BROWSER_WS) {
+              return this.missingBrowserWsError();
+            }
+            result = await agentproxyRender(validateRenderParams(raw), NOVADA_BROWSER_WS);
             break;
           }
           case "agentproxy_search": {
-            if (!NOVADA_API_KEY) return this.missingKeyError("NOVADA_API_KEY", "search tool (Novada Scraper API)");
+            if (!NOVADA_API_KEY) {
+              return this.missingApiKeyError("search tool (Novada Scraper API)");
+            }
             result = await agentproxySearch(validateSearchParams(raw), NOVADA_API_KEY);
             break;
           }
           case "agentproxy_session": {
-            if (!PROXY_API_KEY) return this.missingKeyError("PROXY_API_KEY", "fetch/session tools (proxy network)");
-            result = await agentproxySession(validateSessionParams(raw), PROXY_API_KEY);
+            if (!NOVADA_PROXY_USER || !NOVADA_PROXY_PASS) {
+              return this.missingProxyKeyError();
+            }
+            result = await agentproxySession(validateSessionParams(raw), NOVADA_PROXY_USER, NOVADA_PROXY_PASS);
             break;
           }
           case "agentproxy_status":
@@ -176,10 +187,11 @@ class AgentProxyServer {
             : error instanceof Error
               ? error.message
               : String(error);
-        // Redact API keys from any error message before surfacing to agent
+        // Redact credentials from any error message before surfacing to agent
         let message = rawMsg;
-        if (NOVADA_API_KEY) message = message.replace(NOVADA_API_KEY, "***");
-        if (PROXY_API_KEY && PROXY_API_KEY !== NOVADA_API_KEY) message = message.replace(PROXY_API_KEY, "***");
+        if (NOVADA_API_KEY) message = message.replaceAll(NOVADA_API_KEY, "***");
+        if (NOVADA_PROXY_PASS) message = message.replaceAll(NOVADA_PROXY_PASS, "***");
+        if (NOVADA_BROWSER_WS) message = message.replaceAll(NOVADA_BROWSER_WS, "[browser-ws-redacted]");
         return {
           content: [{ type: "text" as const, text: `Error: ${message}` }],
           isError: true,
@@ -188,11 +200,31 @@ class AgentProxyServer {
     });
   }
 
-  private missingKeyError(envVar: string, forWhat: string) {
+  private missingApiKeyError(forWhat: string) {
     return {
       content: [{
         type: "text" as const,
-        text: `Error: ${envVar} is not set (required for ${forWhat}).\n\nGet your API key at https://www.novada.com — sign up is free.\n\nThen restart with:\n  claude mcp add agentproxy -e ${envVar}=your_key -- npx -y agentproxy`,
+        text: `Error: NOVADA_API_KEY is not set (required for ${forWhat}).\n\nGet your API key at https://www.novada.com — sign up is free.\n\nThen restart with:\n  claude mcp add agentproxy -e NOVADA_API_KEY=your_key -- npx -y agentproxy`,
+      }],
+      isError: true,
+    };
+  }
+
+  private missingProxyKeyError() {
+    return {
+      content: [{
+        type: "text" as const,
+        text: `Error: NOVADA_PROXY_USER and NOVADA_PROXY_PASS are not set (required for fetch/session tools).\n\nGet your proxy credentials at https://www.novada.com:\n  Dashboard → Residential Proxies → Endpoint Generator\n\nThen restart with:\n  claude mcp add agentproxy \\\n    -e NOVADA_PROXY_USER=your_username \\\n    -e NOVADA_PROXY_PASS=your_password \\\n    -- npx -y agentproxy`,
+      }],
+      isError: true,
+    };
+  }
+
+  private missingBrowserWsError() {
+    return {
+      content: [{
+        type: "text" as const,
+        text: `Error: NOVADA_BROWSER_WS is not set (required for the render tool).\n\nGet your Browser API WebSocket URL at https://www.novada.com:\n  Dashboard → Browser API → Playground → copy the Puppeteer/Playwright URL\n\nIt looks like: wss://USER-zone-browser:PASS@upg-scbr.novada.com\n\nThen restart with:\n  claude mcp add agentproxy -e NOVADA_BROWSER_WS=your_wss_url -- npx -y agentproxy`,
       }],
       isError: true,
     };
@@ -224,13 +256,24 @@ Usage:
   npx agentproxy --list-tools Show available tools
   npx agentproxy --help       Show this help
 
-Get your API key:
+Environment Variables:
+  NOVADA_API_KEY        Novada Scraper API key (for agentproxy_search)
+  NOVADA_PROXY_USER     Residential proxy username (for agentproxy_fetch, agentproxy_session)
+  NOVADA_PROXY_PASS     Residential proxy password
+  NOVADA_BROWSER_WS     Browser API WebSocket URL (for agentproxy_render)
+
+Get your credentials:
   1. Sign up at https://www.novada.com (free, 30 seconds)
-  2. Go to Dashboard → API Keys
-  3. Copy your key
+  2. Scraper API key: Dashboard → API Keys
+  3. Proxy credentials: Dashboard → Residential Proxies → Endpoint Generator
+  4. Browser API: Dashboard → Browser API → Playground
 
 Connect to Claude Code:
-  claude mcp add agentproxy -e NOVADA_API_KEY=your_key -- npx -y agentproxy
+  claude mcp add agentproxy \\
+    -e NOVADA_API_KEY=your_key \\
+    -e NOVADA_PROXY_USER=your_username \\
+    -e NOVADA_PROXY_PASS=your_password \\
+    -- npx -y agentproxy
 
 Tools:
   agentproxy_fetch    Fetch any URL through residential proxy (anti-bot bypass)

@@ -1,4 +1,7 @@
-import { agentproxyFetch, validateFetchParams } from "./fetch.js";
+import { agentproxyFetch } from "./fetch.js";
+
+// Mirrors the SAFE_PARAM guard in fetch.ts — prevent proxy URL injection
+const SAFE_PARAM = /^[a-zA-Z0-9_-]+$/;
 
 export interface SessionParams {
   session_id: string;
@@ -10,10 +13,11 @@ export interface SessionParams {
 
 export async function agentproxySession(
   params: SessionParams,
-  proxyApiKey: string
+  proxyUser: string,
+  proxyPass: string
 ): Promise<string> {
   // Session fetch is just a regular fetch with session_id locked in
-  const result = await agentproxyFetch(
+  return agentproxyFetch(
     {
       url: params.url,
       session_id: params.session_id,
@@ -21,9 +25,9 @@ export async function agentproxySession(
       format: params.format || "markdown",
       timeout: params.timeout,
     },
-    proxyApiKey
+    proxyUser,
+    proxyPass
   );
-  return result;
 }
 
 export function validateSessionParams(raw: Record<string, unknown>): SessionParams {
@@ -32,6 +36,11 @@ export function validateSessionParams(raw: Record<string, unknown>): SessionPara
   }
   if (!raw.url || typeof raw.url !== "string") {
     throw new Error("url is required");
+  }
+  if (raw.country !== undefined) {
+    if (typeof raw.country !== "string" || !SAFE_PARAM.test(raw.country)) {
+      throw new Error("country must be a 2-letter ISO code (e.g. US, DE, GB)");
+    }
   }
   return {
     session_id: raw.session_id,

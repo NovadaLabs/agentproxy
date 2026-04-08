@@ -5,25 +5,27 @@ Agent-to-agent proxy MCP server — fetch any URL through 2M+ residential IPs, b
 [![npm](https://img.shields.io/npm/v/agentproxy?label=npm&color=CB3837)](https://npmjs.com/package/agentproxy)
 [![License](https://img.shields.io/badge/license-MIT-green)](LICENSE)
 
-Powered by **[Novada](https://www.novada.com)** — one account, one API key, all tools.
+Powered by **[Novada](https://www.novada.com)** — one account, all tools.
 
-## Get Your Free API Key
+## Get Your Credentials
 
 1. Sign up at **[novada.com](https://www.novada.com)** — 30 seconds, no credit card
-2. Go to **Dashboard → API Keys** → copy your key
-3. Add to Claude Code (see below)
-
-Contact **novada.com** for enterprise access and custom plans.
+2. Go to **Dashboard** and grab your credentials for each product you need:
+   - **Search** (`NOVADA_API_KEY`): Dashboard → API Keys
+   - **Fetch / Session** (`NOVADA_PROXY_USER` + `NOVADA_PROXY_PASS`): Dashboard → Residential Proxies → Endpoint Generator
+   - **Render** (`NOVADA_BROWSER_WS`): Dashboard → Browser API → Playground → copy the Puppeteer/Playwright URL
 
 ## Install
 
 ```bash
 claude mcp add agentproxy \
   -e NOVADA_API_KEY=your_key \
+  -e NOVADA_PROXY_USER=your_proxy_username \
+  -e NOVADA_PROXY_PASS=your_proxy_password \
   -- npx -y agentproxy
 ```
 
-That's it. One key. Five tools. Ready.
+For the browser render tool, also add `-e NOVADA_BROWSER_WS=wss://USER-zone-browser:PASS@upg-scbr.novada.com`.
 
 ## Why AgentProxy
 
@@ -43,18 +45,21 @@ AI agents get blocked on 60–70% of commercial websites with standard HTTP requ
 ### `agentproxy_fetch`
 Fetch any URL through Novada's residential proxy. Works on Amazon, LinkedIn, Cloudflare-protected pages, and most commercial sites.
 
+**Requires:** `NOVADA_PROXY_USER` + `NOVADA_PROXY_PASS`
+
 ```
 url        — Target URL (required)
 country    — 2-letter code: US, DE, JP, GB, BR, ... (195+ countries)
 city       — City-level: newyork, london, tokyo, ...
-session_id — Reuse same ID to keep the same IP across calls
-asn        — Target a specific ISP/ASN
+session_id — Reuse same ID to keep the same IP (letters/numbers/underscores only)
 format     — "markdown" (default) | "raw"
 timeout    — Seconds, 1-120 (default 60)
 ```
 
-### `agentproxy_render`
+### `agentproxy_render` [BETA]
 Render JavaScript-heavy pages using Novada's Browser API (real Chromium). Use this for SPAs, React/Vue apps, and sites that need JS to load content.
+
+**Requires:** `NOVADA_BROWSER_WS` (WebSocket URL from Dashboard → Browser API → Playground)
 
 ```
 url       — Target URL (required)
@@ -65,6 +70,8 @@ timeout   — Seconds, 5-120 (default 60)
 
 ### `agentproxy_search`
 Structured web search via Novada. Returns clean titles, URLs, descriptions — no HTML parsing needed.
+
+**Requires:** `NOVADA_API_KEY`
 
 ```
 query    — Search query (required)
@@ -77,8 +84,10 @@ language — Language code (e.g. en, zh, de)
 ### `agentproxy_session`
 Sticky session fetch — every call with the same `session_id` uses the same residential IP. For login flows, paginated scraping, price monitoring.
 
+**Requires:** `NOVADA_PROXY_USER` + `NOVADA_PROXY_PASS`
+
 ```
-session_id — Unique session ID (required)
+session_id — Unique session ID, no hyphens (required)
 url        — Target URL (required)
 country    — 2-letter country code
 format     — "markdown" | "raw"
@@ -103,8 +112,8 @@ agentproxy_fetch(url=..., country="JP")
 agentproxy_render(url="https://zillow.com/homes/NYC_rb/", wait_for=".list-card")
 
 # Multi-page scrape with same IP
-agentproxy_session(session_id="job-001", url="https://example.com/page/1")
-agentproxy_session(session_id="job-001", url="https://example.com/page/2")  # same IP
+agentproxy_session(session_id="job001", url="https://example.com/page/1")
+agentproxy_session(session_id="job001", url="https://example.com/page/2")  # same IP
 
 # Web search
 agentproxy_search(query="AI proxy tools 2024", engine="google", num=5)
@@ -128,6 +137,7 @@ agentproxy_search(query="AI proxy tools 2024", engine="google", num=5)
 
 - Sites requiring full JS execution (Zillow, BestBuy, Nike) → use `agentproxy_render`
 - DuckDuckGo search → intermittently blocks proxy IPs; use Google or Bing
+- Session IDs must not contain hyphens (Novada uses `-` as its username parameter delimiter)
 
 ## License
 

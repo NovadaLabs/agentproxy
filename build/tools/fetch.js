@@ -2,20 +2,26 @@ import axios from "axios";
 import { HttpsProxyAgent } from "https-proxy-agent";
 import { gunzipSync, brotliDecompressSync, inflateSync } from "zlib";
 import { PROXY_HOST, PROXY_PORT, DEFAULT_USER_AGENT } from "../config.js";
+import { htmlToMarkdown, unicodeSafeTruncate } from "../utils.js";
 // Allowed characters for proxy auth suffix params — prevent URL injection
-// e.g. session_id="abc@evil.com:99" would break the proxy URL auth delimiter
 const SAFE_PARAM = /^[a-zA-Z0-9_-]+$/;
-function buildProxyAuth(apiKey, params) {
-    let suffix = "";
+// session_id disallows hyphens — Novada uses `-` as the username param delimiter,
+// so a hyphenated session_id like "my-session" would produce ambiguous parsing
+// in the username string (e.g. USERNAME-zone-res-session-my-session).
+const SAFE_SESSION_ID = /^[a-zA-Z0-9_]+$/;
+/**
+ * Build the Novada proxy username with targeting suffixes appended after zone-res.
+ * Format: USERNAME-zone-res[-region-XX][-city-CITY][-session-ID]
+ */
+function buildProxyUsername(baseUser, params) {
+    let username = `${baseUser}-zone-res`;
     if (params.country)
-        suffix += `-country-${params.country.toUpperCase()}`;
+        username += `-region-${params.country.toLowerCase()}`;
     if (params.city)
-        suffix += `-city-${params.city.toLowerCase()}`;
+        username += `-city-${params.city.toLowerCase()}`;
     if (params.session_id)
-        suffix += `-session-${params.session_id}`;
-    if (params.asn)
-        suffix += `-asn-${params.asn}`;
-    return `${apiKey}${suffix}`;
+        username += `-session-${params.session_id}`;
+    return username;
 }
 function decompress(buffer, encoding) {
     // Primary: decompress according to the Content-Encoding header
@@ -48,50 +54,13 @@ function decompress(buffer, encoding) {
     // Raw bytes — return as UTF-8 (may be uncompressed or failed decompression)
     return buffer.toString("utf-8");
 }
-function decodeHtmlEntities(s) {
-    return s
-        .replace(/&amp;/g, "&")
-        .replace(/&lt;/g, "<")
-        .replace(/&gt;/g, ">")
-        .replace(/&quot;/g, '"')
-        .replace(/&#39;/g, "'")
-        .replace(/&nbsp;/g, " ");
-}
-function htmlToMarkdown(html) {
-    return html
-        .replace(/<script[\s\S]*?<\/script>/gi, "")
-        .replace(/<style[\s\S]*?<\/style>/gi, "")
-        .replace(/<br\s*\/?>/gi, "\n")
-        .replace(/<\/p>/gi, "\n\n")
-        .replace(/<\/h[1-6]>/gi, "\n\n")
-        .replace(/<\/li>/gi, "\n")
-        .replace(/<li[^>]*>/gi, "- ")
-        .replace(/<h([1-6])[^>]*>/gi, (_, n) => "#".repeat(Number(n)) + " ")
-        // Decode entities in href before building markdown links (prevents &amp; in URLs)
-        .replace(/<a[^>]+href=["']([^"']+)["'][^>]*>([^<]*)<\/a>/gi, (_, href, text) => `[${text}](${decodeHtmlEntities(href)})`)
-        .replace(/<[^>]+>/g, "")
-        .replace(/&amp;/g, "&")
-        .replace(/&lt;/g, "<")
-        .replace(/&gt;/g, ">")
-        .replace(/&quot;/g, '"')
-        .replace(/&#39;/g, "'")
-        .replace(/&nbsp;/g, " ")
-        .replace(/\n{3,}/g, "\n\n")
-        .trim();
-}
-function unicodeSafeTruncate(s, maxChars) {
-    if (s.length <= maxChars)
-        return s;
-    // Spread to handle surrogate pairs correctly, then rejoin
-    return [...s].slice(0, maxChars).join("");
-}
-export async function agentproxyFetch(params, proxyApiKey) {
+export async function agentproxyFetch(params, proxyUser, proxyPass) {
     const { url, format = "markdown", timeout = 60 } = params;
     if (!url.startsWith("http://") && !url.startsWith("https://")) {
         throw new Error("URL must start with http:// or https://");
     }
-    const proxyAuth = buildProxyAuth(proxyApiKey, params);
-    const proxyUrl = `http://user:${proxyAuth}@${PROXY_HOST}:${PROXY_PORT}`;
+    const username = buildProxyUsername(proxyUser, params);
+    const proxyUrl = `http://${encodeURIComponent(username)}:${encodeURIComponent(proxyPass)}@${PROXY_HOST}:${PROXY_PORT}`;
     const agent = new HttpsProxyAgent(proxyUrl);
     let lastError = null;
     for (let attempt = 1; attempt <= 2; attempt++) {
@@ -138,8 +107,12 @@ export async function agentproxyFetch(params, proxyApiKey) {
         }
         catch (err) {
             lastError = err instanceof Error ? err : new Error(String(err));
-            if (attempt < 2)
-                continue; // retry once with a fresh connection
+            // Only retry on network errors or 5xx — never retry 4xx (auth, not-found, etc.)
+            const isRetryable = !(axios.isAxiosError(err) &&
+                err.response &&
+                err.response.status < 500);
+            if (attempt < 2 && isRetryable)
+                continue;
         }
     }
     throw lastError;
@@ -159,13 +132,8 @@ export function validateFetchParams(raw) {
         }
     }
     if (raw.session_id !== undefined) {
-        if (typeof raw.session_id !== "string" || !SAFE_PARAM.test(raw.session_id)) {
-            throw new Error("session_id must contain only letters, numbers, hyphens, underscores");
-        }
-    }
-    if (raw.asn !== undefined) {
-        if (typeof raw.asn !== "string" || !SAFE_PARAM.test(raw.asn)) {
-            throw new Error("asn must contain only letters, numbers, hyphens, underscores");
+        if (typeof raw.session_id !== "string" || !SAFE_SESSION_ID.test(raw.session_id)) {
+            throw new Error("session_id must contain only letters, numbers, and underscores (no hyphens)");
         }
     }
     if (raw.format && raw.format !== "raw" && raw.format !== "markdown") {
@@ -180,7 +148,6 @@ export function validateFetchParams(raw) {
         country: raw.country,
         city: raw.city,
         session_id: raw.session_id,
-        asn: raw.asn,
         format: raw.format || "markdown",
         timeout,
     };

@@ -5,6 +5,6 @@ export interface SessionParams {
     format?: "raw" | "markdown";
     timeout?: number;
 }
-export declare function agentproxySession(params: SessionParams, proxyApiKey: string): Promise<string>;
+export declare function agentproxySession(params: SessionParams, proxyUser: string, proxyPass: string): Promise<string>;
 export declare function validateSessionParams(raw: Record<string, unknown>): SessionParams;
 //# sourceMappingURL=session.d.ts.map

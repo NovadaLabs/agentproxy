@@ -1,8 +1,8 @@
-export declare const VERSION = "1.2.0";
+export declare const VERSION = "1.3.0";
 export declare const NOVADA_SEARCH_URL = "https://scraperapi.novada.com/search";
-export declare const NOVADA_BROWSER_URL = "https://browserapi.novada.com/extract";
 export declare const GATEWAY_URL = "https://gateway.iploop.io:9443/health";
 export declare const PROXY_HOST: string;
 export declare const PROXY_PORT: number;
+export declare const BROWSER_WS_HOST: string;
 export declare const DEFAULT_USER_AGENT = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36";
 //# sourceMappingURL=config.d.ts.map
