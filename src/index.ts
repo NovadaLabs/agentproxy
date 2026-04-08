@@ -67,16 +67,16 @@ const TOOLS = [
   {
     name: "agentproxy_search",
     description:
-      "Structured web search via Novada (Google, Bing, DuckDuckGo). Returns titles, URLs, and descriptions — no HTML parsing needed. Best for finding pages and factual queries. For reading a specific URL, use agentproxy_fetch instead.",
+      "Structured web search via Novada (Google). Returns titles, URLs, and descriptions — no HTML parsing needed. Best for finding pages and factual queries. For reading a specific URL, use agentproxy_fetch instead.",
     inputSchema: {
       type: "object" as const,
       properties: {
         query: { type: "string", description: "The search query" },
         engine: {
           type: "string",
-          enum: ["google", "bing", "duckduckgo", "yahoo", "yandex"],
+          enum: ["google"],
           default: "google",
-          description: "Search engine — google recommended",
+          description: "Search engine (google only — other engines have known quality issues with proxy IPs)",
         },
         num: { type: "number", default: 10, minimum: 1, maximum: 20, description: "Number of results (1-20)" },
         country: { type: "string", description: "Country for localized results (e.g. us, uk, de)" },

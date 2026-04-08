@@ -12,19 +12,10 @@ export async function agentproxySearch(params, novadaApiKey) {
         engine,
         num: String(num),
     });
-    if (engine === "bing") {
-        // Bing requires explicit locale — proxy IPs return wrong-language results otherwise
-        searchParams.set("country", country || "us");
-        searchParams.set("language", language || "en");
-        searchParams.set("mkt", language && country ? `${language}-${country.toUpperCase()}` : "en-US");
-        searchParams.set("setlang", "en");
-    }
-    else {
-        if (country)
-            searchParams.set("country", country);
-        if (language)
-            searchParams.set("language", language);
-    }
+    if (country)
+        searchParams.set("country", country);
+    if (language)
+        searchParams.set("language", language);
     const requestUrl = `${NOVADA_SEARCH_URL}?${searchParams.toString()}`;
     let response;
     try {
@@ -50,14 +41,17 @@ export async function agentproxySearch(params, novadaApiKey) {
     if (data.code && data.code !== 200 && data.code !== 0) {
         throw new Error(`Novada search error (${data.code}): ${String(data.msg || "unknown")}`);
     }
-    const results = data.data?.organic_results || data.organic_results || data.data?.results || data.results || [];
+    const rawResults = data.data?.organic_results || data.organic_results || data.data?.results || data.results || [];
+    // Client-side cap: some engines (Bing) ignore num and return 10 regardless
+    const results = rawResults.slice(0, num);
     if (!results.length) {
         return `No results found for: "${query}"`;
     }
     const lines = [
         `Search: "${query}" via ${engine.toUpperCase()} — ${results.length} results\n`,
         ...results.map((r, i) => {
-            const url = r.url || r.link || "N/A";
+            // Prefer redirection_link (Bing gives real URL there; `link` is a click-tracking wrapper)
+            const url = r.redirection_link || r.url || r.link || "N/A";
             const desc = r.description || r.snippet || "";
             return `${i + 1}. **${r.title || "Untitled"}**\n   ${url}\n   ${desc}`;
         }),
@@ -68,9 +62,8 @@ export function validateSearchParams(raw) {
     if (!raw.query || typeof raw.query !== "string") {
         throw new Error("query is required");
     }
-    const validEngines = ["google", "bing", "duckduckgo", "yahoo", "yandex"];
-    if (raw.engine && !validEngines.includes(raw.engine)) {
-        throw new Error(`engine must be one of: ${validEngines.join(", ")}`);
+    if (raw.engine && raw.engine !== "google") {
+        throw new Error("engine must be 'google' — other engines have known quality issues");
     }
     const num = raw.num ? Number(raw.num) : 10;
     if (num < 1 || num > 20)

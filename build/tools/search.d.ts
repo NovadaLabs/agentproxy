@@ -1,6 +1,6 @@
 export interface SearchParams {
     query: string;
-    engine?: "google" | "bing" | "duckduckgo" | "yahoo" | "yandex";
+    engine?: "google";
     num?: number;
     country?: string;
     language?: string;
