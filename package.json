@@ -1,0 +1,48 @@
+{
+  "name": "agentproxy",
+  "version": "1.0.0",
+  "description": "Agent-to-agent proxy MCP server — residential proxy fetch, geo-targeting, sticky sessions, and web search for AI agents. Powered by Novada.",
+  "type": "module",
+  "bin": {
+    "agentproxy": "build/index.js"
+  },
+  "files": [
+    "build"
+  ],
+  "scripts": {
+    "build": "tsc && node -e \"require('fs').chmodSync('build/index.js', '755')\"",
+    "dev": "tsc --watch",
+    "inspector": "npx @modelcontextprotocol/inspector build/index.js",
+    "prepublishOnly": "npm run build"
+  },
+  "keywords": [
+    "mcp",
+    "mcp-server",
+    "model-context-protocol",
+    "proxy",
+    "residential-proxy",
+    "agent-proxy",
+    "ai-agents",
+    "agent-to-agent",
+    "web-scraping",
+    "anti-bot",
+    "geo-targeting",
+    "novada",
+    "claude",
+    "cursor"
+  ],
+  "author": "Novada <support@novada.com>",
+  "license": "MIT",
+  "engines": {
+    "node": ">=18.0.0"
+  },
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "^1.26.0",
+    "axios": "^1.7.0",
+    "https-proxy-agent": "^9.0.0"
+  },
+  "devDependencies": {
+    "@types/node": "^20.11.24",
+    "typescript": "^5.3.3"
+  }
+}
