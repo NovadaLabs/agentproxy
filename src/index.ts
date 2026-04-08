@@ -92,7 +92,7 @@ const TOOLS = [
     inputSchema: {
       type: "object" as const,
       properties: {
-        session_id: { type: "string", description: "Unique session ID — reuse the same value to keep the same IP" },
+        session_id: { type: "string", description: "Unique session ID — reuse the same value to keep the same IP (letters, numbers, underscores only — no hyphens)" },
         url: { type: "string", description: "The URL to fetch" },
         country: { type: "string", description: "2-letter country code" },
         format: { type: "string", enum: ["markdown", "raw"], default: "markdown" },

@@ -23,9 +23,8 @@ export async function agentproxyRender(
     defaultViewport: { width: 1366, height: 768 },
   });
 
+  const page = await browser.newPage();
   try {
-    const page = await browser.newPage();
-
     await page.goto(url, {
       waitUntil: "domcontentloaded",
       timeout: timeout * 1000,
@@ -61,6 +60,8 @@ export async function agentproxyRender(
 
     return `[${meta}]\n\n${finalContent}`;
   } finally {
+    // Always close the page to avoid server-side session leak (billed by session-second)
+    await page.close().catch(() => {});
     await browser.disconnect();
   }
 }

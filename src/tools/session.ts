@@ -2,6 +2,8 @@ import { agentproxyFetch } from "./fetch.js";
 
 // Mirrors the SAFE_PARAM guard in fetch.ts — prevent proxy URL injection
 const SAFE_PARAM = /^[a-zA-Z0-9_-]+$/;
+// session_id disallows hyphens — Novada uses `-` as username param delimiter
+const SAFE_SESSION_ID = /^[a-zA-Z0-9_]+$/;
 
 export interface SessionParams {
   session_id: string;
@@ -31,8 +33,8 @@ export async function agentproxySession(
 }
 
 export function validateSessionParams(raw: Record<string, unknown>): SessionParams {
-  if (!raw.session_id || typeof raw.session_id !== "string") {
-    throw new Error("session_id is required — use the same ID across requests to get the same IP");
+  if (!raw.session_id || typeof raw.session_id !== "string" || !SAFE_SESSION_ID.test(raw.session_id)) {
+    throw new Error("session_id is required — letters, numbers, underscores only (no hyphens)");
   }
   if (!raw.url || typeof raw.url !== "string") {
     throw new Error("url is required");

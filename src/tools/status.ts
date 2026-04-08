@@ -1,7 +1,11 @@
 import axios from "axios";
-import { GATEWAY_URL } from "../config.js";
 
-interface GatewayHealth {
+// Novada node-registration service — reports live network health
+const NETWORK_STATUS_URL = "https://gateway.novada.pro/health";
+// Fallback endpoint in case the primary moves
+const NETWORK_STATUS_FALLBACK = "https://gateway.iploop.io:9443/health";
+
+interface NetworkHealth {
   status: string;
   connected_nodes: number;
   device_types?: Record<string, number>;
@@ -10,22 +14,33 @@ interface GatewayHealth {
 }
 
 export async function agentproxyStatus(): Promise<string> {
-  const response = await axios.get<GatewayHealth>(GATEWAY_URL, {
-    timeout: 10000,
-  });
+  // Try primary endpoint, fall back silently if it fails
+  let data: NetworkHealth | null = null;
+  for (const url of [NETWORK_STATUS_URL, NETWORK_STATUS_FALLBACK]) {
+    try {
+      const response = await axios.get<NetworkHealth>(url, { timeout: 10000 });
+      data = response.data;
+      break;
+    } catch {
+      // try next
+    }
+  }
 
-  const h = response.data;
-  const devices = h.device_types
-    ? Object.entries(h.device_types)
+  if (!data) {
+    return "Proxy Network Status: UNKNOWN\nCould not reach status endpoint — try again in a moment.";
+  }
+
+  const devices = data.device_types
+    ? Object.entries(data.device_types)
         .map(([k, v]) => `${k}: ${v.toLocaleString()}`)
         .join(", ")
     : "unknown";
 
   return [
-    `Proxy Network Status: ${h.status?.toUpperCase() || "UNKNOWN"}`,
-    `Connected nodes: ${h.connected_nodes?.toLocaleString() || 0}`,
+    `Proxy Network Status: ${data.status?.toUpperCase() || "UNKNOWN"}`,
+    `Connected nodes: ${data.connected_nodes?.toLocaleString() || 0}`,
     `Device breakdown: ${devices}`,
-    h.timestamp ? `Last updated: ${h.timestamp}` : "",
+    data.timestamp ? `Last updated: ${data.timestamp}` : "",
   ]
     .filter(Boolean)
     .join("\n");
