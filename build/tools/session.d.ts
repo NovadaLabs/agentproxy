@@ -1,3 +1,4 @@
+import type { ProxyAdapter, ProxyCredentials } from "../adapters/index.js";
 export interface SessionParams {
     session_id: string;
     url: string;
@@ -5,5 +6,5 @@ export interface SessionParams {
     format?: "raw" | "markdown";
     timeout?: number;
 }
-export declare function agentproxySession(params: SessionParams, proxyUser: string, proxyPass: string): Promise<string>;
+export declare function agentproxySession(params: SessionParams, adapter: ProxyAdapter, credentials: ProxyCredentials): Promise<string>;
 export declare function validateSessionParams(raw: Record<string, unknown>): SessionParams;

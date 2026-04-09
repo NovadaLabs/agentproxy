@@ -2,29 +2,14 @@ import axios from "axios";
 import { HttpsProxyAgent } from "https-proxy-agent";
 import { HttpProxyAgent } from "http-proxy-agent";
 import { gunzipSync, brotliDecompressSync, inflateSync } from "zlib";
-import { PROXY_HOST, PROXY_PORT, DEFAULT_USER_AGENT } from "../config.js";
+import { DEFAULT_USER_AGENT } from "../config.js";
 import { htmlToMarkdown, unicodeSafeTruncate } from "../utils.js";
-// Country and city must not contain hyphens — Novada uses `-` as the segment
-// delimiter in the proxy username string. Passing country="us-session-injected"
-// would silently forge extra segments (e.g. alice-zone-res-region-us-session-injected).
+// Input validation patterns — prevent proxy username injection.
+// No hyphens: Novada uses `-` as segment delimiter; other adapters have similar constraints.
+// These patterns are intentionally strict — adapters may further restrict via their own format.
 const SAFE_COUNTRY = /^[a-zA-Z0-9_]+$/;
 const SAFE_CITY = /^[a-zA-Z0-9_]+$/;
-// session_id also disallows hyphens for the same reason.
 const SAFE_SESSION_ID = /^[a-zA-Z0-9_]+$/;
-/**
- * Build the Novada proxy username with targeting suffixes appended after zone-res.
- * Format: USERNAME-zone-res[-region-XX][-city-CITY][-session-ID]
- */
-function buildProxyUsername(baseUser, params) {
-    let username = `${baseUser}-zone-res`;
-    if (params.country)
-        username += `-region-${params.country.toLowerCase()}`;
-    if (params.city)
-        username += `-city-${params.city.toLowerCase()}`;
-    if (params.session_id)
-        username += `-session-${params.session_id}`;
-    return username;
-}
 function decompress(buffer, encoding) {
     // When the server declares an encoding, trust it — throw on failure so the retry loop fires
     if (encoding === "gzip")
@@ -41,13 +26,12 @@ function decompress(buffer, encoding) {
     catch { /* not compressed */ }
     return buffer.toString("utf-8");
 }
-export async function agentproxyFetch(params, proxyUser, proxyPass) {
+export async function agentproxyFetch(params, adapter, credentials) {
     const { url, format = "markdown", timeout = 60 } = params;
     if (!url.startsWith("http://") && !url.startsWith("https://")) {
         throw new Error("URL must start with http:// or https://");
     }
-    const username = buildProxyUsername(proxyUser, params);
-    const proxyUrl = `http://${encodeURIComponent(username)}:${encodeURIComponent(proxyPass)}@${PROXY_HOST}:${PROXY_PORT}`;
+    const proxyUrl = adapter.buildProxyUrl(credentials, params);
     // HttpsProxyAgent for HTTPS targets (CONNECT tunnel + TLS); HttpProxyAgent for plain HTTP
     const httpsAgent = new HttpsProxyAgent(proxyUrl);
     const httpAgent = new HttpProxyAgent(proxyUrl);
@@ -55,8 +39,8 @@ export async function agentproxyFetch(params, proxyUser, proxyPass) {
     for (let attempt = 1; attempt <= 2; attempt++) {
         try {
             const response = await axios.get(url, {
-                httpsAgent: httpsAgent,
-                httpAgent: httpAgent,
+                httpsAgent,
+                httpAgent,
                 proxy: false,
                 // arraybuffer + decompress:false = we handle decompression ourselves.
                 // axios built-in decompress conflicts with https-proxy-agent CONNECT tunnel

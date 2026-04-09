@@ -1,8 +1,8 @@
 import { agentproxyFetch } from "./fetch.js";
+import type { ProxyAdapter, ProxyCredentials } from "../adapters/index.js";
 
-// No hyphens in any proxy username param — Novada uses `-` as segment delimiter.
-// "us-session-injected" as country would forge extra segments silently.
-const SAFE_PARAM = /^[a-zA-Z0-9_]+$/;
+// No hyphens in any proxy username param — Novada (and most providers) use `-` as segment delimiter.
+const SAFE_PARAM      = /^[a-zA-Z0-9_]+$/;
 const SAFE_SESSION_ID = /^[a-zA-Z0-9_]+$/;
 
 export interface SessionParams {
@@ -15,20 +15,20 @@ export interface SessionParams {
 
 export async function agentproxySession(
   params: SessionParams,
-  proxyUser: string,
-  proxyPass: string
+  adapter: ProxyAdapter,
+  credentials: ProxyCredentials
 ): Promise<string> {
-  // Session fetch is just a regular fetch with session_id locked in
+  // Session fetch is a regular fetch with session_id locked in
   return agentproxyFetch(
     {
-      url: params.url,
+      url:        params.url,
       session_id: params.session_id,
-      country: params.country,
-      format: params.format || "markdown",
-      timeout: params.timeout,
+      country:    params.country,
+      format:     params.format || "markdown",
+      timeout:    params.timeout,
     },
-    proxyUser,
-    proxyPass
+    adapter,
+    credentials
   );
 }
 
@@ -43,8 +43,8 @@ export function validateSessionParams(raw: Record<string, unknown>): SessionPara
     throw new Error("url must start with http:// or https://");
   }
   if (raw.country !== undefined) {
-    if (typeof raw.country !== "string" || !SAFE_PARAM.test(raw.country)) {
-      throw new Error("country must be a 2-letter ISO code (e.g. US, DE, GB)");
+    if (typeof raw.country !== "string" || raw.country.length > 10 || !SAFE_PARAM.test(raw.country)) {
+      throw new Error("country must be a 2-letter ISO code with no hyphens (e.g. US, DE, GB)");
     }
   }
   const timeout = raw.timeout ? Number(raw.timeout) : 60;
@@ -53,9 +53,9 @@ export function validateSessionParams(raw: Record<string, unknown>): SessionPara
   }
   return {
     session_id: raw.session_id,
-    url: raw.url,
-    country: raw.country as string | undefined,
-    format: (raw.format as "raw" | "markdown") || "markdown",
+    url:        raw.url,
+    country:    raw.country as string | undefined,
+    format:     (raw.format as "raw" | "markdown") || "markdown",
     timeout,
   };
 }

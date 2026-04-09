@@ -2,15 +2,15 @@ import axios from "axios";
 import { HttpsProxyAgent } from "https-proxy-agent";
 import { HttpProxyAgent } from "http-proxy-agent";
 import { gunzipSync, brotliDecompressSync, inflateSync } from "zlib";
-import { PROXY_HOST, PROXY_PORT, DEFAULT_USER_AGENT } from "../config.js";
+import { DEFAULT_USER_AGENT } from "../config.js";
 import { htmlToMarkdown, unicodeSafeTruncate } from "../utils.js";
+import type { ProxyAdapter, ProxyCredentials } from "../adapters/index.js";
 
-// Country and city must not contain hyphens — Novada uses `-` as the segment
-// delimiter in the proxy username string. Passing country="us-session-injected"
-// would silently forge extra segments (e.g. alice-zone-res-region-us-session-injected).
-const SAFE_COUNTRY = /^[a-zA-Z0-9_]+$/;
-const SAFE_CITY    = /^[a-zA-Z0-9_]+$/;
-// session_id also disallows hyphens for the same reason.
+// Input validation patterns — prevent proxy username injection.
+// No hyphens: Novada uses `-` as segment delimiter; other adapters have similar constraints.
+// These patterns are intentionally strict — adapters may further restrict via their own format.
+const SAFE_COUNTRY    = /^[a-zA-Z0-9_]+$/;
+const SAFE_CITY       = /^[a-zA-Z0-9_]+$/;
 const SAFE_SESSION_ID = /^[a-zA-Z0-9_]+$/;
 
 export interface FetchParams {
@@ -22,22 +22,10 @@ export interface FetchParams {
   timeout?: number;
 }
 
-/**
- * Build the Novada proxy username with targeting suffixes appended after zone-res.
- * Format: USERNAME-zone-res[-region-XX][-city-CITY][-session-ID]
- */
-function buildProxyUsername(baseUser: string, params: FetchParams): string {
-  let username = `${baseUser}-zone-res`;
-  if (params.country) username += `-region-${params.country.toLowerCase()}`;
-  if (params.city) username += `-city-${params.city.toLowerCase()}`;
-  if (params.session_id) username += `-session-${params.session_id}`;
-  return username;
-}
-
 function decompress(buffer: Buffer, encoding: string | undefined): string {
   // When the server declares an encoding, trust it — throw on failure so the retry loop fires
-  if (encoding === "gzip") return gunzipSync(buffer).toString("utf-8");
-  if (encoding === "br") return brotliDecompressSync(buffer).toString("utf-8");
+  if (encoding === "gzip")    return gunzipSync(buffer).toString("utf-8");
+  if (encoding === "br")      return brotliDecompressSync(buffer).toString("utf-8");
   if (encoding === "deflate") return inflateSync(buffer).toString("utf-8");
 
   // No encoding header — try gunzip as a best-effort fallback
@@ -48,8 +36,8 @@ function decompress(buffer: Buffer, encoding: string | undefined): string {
 
 export async function agentproxyFetch(
   params: FetchParams,
-  proxyUser: string,
-  proxyPass: string
+  adapter: ProxyAdapter,
+  credentials: ProxyCredentials
 ): Promise<string> {
   const { url, format = "markdown", timeout = 60 } = params;
 
@@ -57,19 +45,18 @@ export async function agentproxyFetch(
     throw new Error("URL must start with http:// or https://");
   }
 
-  const username = buildProxyUsername(proxyUser, params);
-  const proxyUrl = `http://${encodeURIComponent(username)}:${encodeURIComponent(proxyPass)}@${PROXY_HOST}:${PROXY_PORT}`;
+  const proxyUrl = adapter.buildProxyUrl(credentials, params);
   // HttpsProxyAgent for HTTPS targets (CONNECT tunnel + TLS); HttpProxyAgent for plain HTTP
   const httpsAgent = new HttpsProxyAgent(proxyUrl);
-  const httpAgent = new HttpProxyAgent(proxyUrl);
+  const httpAgent  = new HttpProxyAgent(proxyUrl);
 
   let lastError: Error | null = null;
 
   for (let attempt = 1; attempt <= 2; attempt++) {
     try {
       const response = await axios.get(url, {
-        httpsAgent: httpsAgent,
-        httpAgent: httpAgent,
+        httpsAgent,
+        httpAgent,
         proxy: false,
         // arraybuffer + decompress:false = we handle decompression ourselves.
         // axios built-in decompress conflicts with https-proxy-agent CONNECT tunnel
@@ -87,14 +74,14 @@ export async function agentproxyFetch(
         maxRedirects: 5,
       });
 
-      const encoding = response.headers["content-encoding"] as string | undefined;
+      const encoding    = response.headers["content-encoding"] as string | undefined;
       const contentType = response.headers["content-type"] as string | undefined;
       const body = decompress(Buffer.from(response.data as ArrayBuffer), encoding);
 
       const isHtml = contentType?.includes("text/html") || body.toLowerCase().includes("<html");
       const output = format === "markdown" && isHtml ? htmlToMarkdown(body) : body;
 
-      const truncated = output.length > 100_000;
+      const truncated   = output.length > 100_000;
       const finalOutput = truncated
         ? unicodeSafeTruncate(output, 100_000) + "\n\n[... truncated — page is large]"
         : output;
@@ -103,9 +90,9 @@ export async function agentproxyFetch(
         `URL: ${url}`,
         `Status: ${response.status}`,
         `Size: ${(body.length / 1024).toFixed(0)} KB`,
-        params.country ? `Country: ${params.country.toUpperCase()}` : "",
+        params.country    ? `Country: ${params.country.toUpperCase()}` : "",
         params.session_id ? `Session: ${params.session_id}` : "",
-        truncated ? "Truncated: yes" : "",
+        truncated         ? "Truncated: yes" : "",
       ]
         .filter(Boolean)
         .join(" | ");
@@ -157,10 +144,10 @@ export function validateFetchParams(raw: Record<string, unknown>): FetchParams {
   }
   return {
     url: raw.url,
-    country: raw.country as string | undefined,
-    city: raw.city as string | undefined,
+    country:    raw.country    as string | undefined,
+    city:       raw.city       as string | undefined,
     session_id: raw.session_id as string | undefined,
-    format: (raw.format as "raw" | "markdown") || "markdown",
+    format:     (raw.format as "raw" | "markdown") || "markdown",
     timeout,
   };
 }

@@ -1,6 +1,6 @@
 {
   "name": "proxy-veil",
-  "version": "1.4.4",
+  "version": "1.4.5",
   "description": "MCP server for AI agents — residential proxy fetch, geo-targeting, sticky sessions, and web search. Bypass anti-bot systems invisibly. Powered by Novada.",
   "type": "module",
   "bin": {
