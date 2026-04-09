@@ -85,7 +85,7 @@ export function validateRenderParams(raw: Record<string, unknown>): RenderParams
     throw new Error("wait_for must be a CSS selector string");
   }
   const timeout = raw.timeout ? Number(raw.timeout) : 60;
-  if (timeout < 5 || timeout > 120) throw new Error("timeout must be 5-120 seconds");
+  if (!Number.isFinite(timeout) || timeout < 5 || timeout > 120) throw new Error("timeout must be 5-120 seconds");
   return {
     url: raw.url,
     format: (raw.format as RenderParams["format"]) || "markdown",

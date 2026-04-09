@@ -1,7 +1,7 @@
 import { agentproxyFetch } from "./fetch.js";
-// Mirrors the SAFE_PARAM guard in fetch.ts — prevent proxy URL injection
-const SAFE_PARAM = /^[a-zA-Z0-9_-]+$/;
-// session_id disallows hyphens — Novada uses `-` as username param delimiter
+// No hyphens in any proxy username param — Novada uses `-` as segment delimiter.
+// "us-session-injected" as country would forge extra segments silently.
+const SAFE_PARAM = /^[a-zA-Z0-9_]+$/;
 const SAFE_SESSION_ID = /^[a-zA-Z0-9_]+$/;
 export async function agentproxySession(params, proxyUser, proxyPass) {
     // Session fetch is just a regular fetch with session_id locked in
@@ -28,12 +28,16 @@ export function validateSessionParams(raw) {
             throw new Error("country must be a 2-letter ISO code (e.g. US, DE, GB)");
         }
     }
+    const timeout = raw.timeout ? Number(raw.timeout) : 60;
+    if (!Number.isFinite(timeout) || timeout < 1 || timeout > 120) {
+        throw new Error("timeout must be between 1 and 120 seconds");
+    }
     return {
         session_id: raw.session_id,
         url: raw.url,
         country: raw.country,
         format: raw.format || "markdown",
-        timeout: raw.timeout ? Number(raw.timeout) : 60,
+        timeout,
     };
 }
 //# sourceMappingURL=session.js.map

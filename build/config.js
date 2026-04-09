@@ -1,4 +1,4 @@
-export const VERSION = "1.4.0";
+export const VERSION = "1.4.1";
 // Novada Scraper API — web search
 export const NOVADA_SEARCH_URL = "https://scraperapi.novada.com/search";
 // Novada Residential Proxy — username/password auth

@@ -4,11 +4,12 @@ import { HttpProxyAgent } from "http-proxy-agent";
 import { gunzipSync, brotliDecompressSync, inflateSync } from "zlib";
 import { PROXY_HOST, PROXY_PORT, DEFAULT_USER_AGENT } from "../config.js";
 import { htmlToMarkdown, unicodeSafeTruncate } from "../utils.js";
-// Allowed characters for proxy auth suffix params — prevent URL injection
-const SAFE_PARAM = /^[a-zA-Z0-9_-]+$/;
-// session_id disallows hyphens — Novada uses `-` as the username param delimiter,
-// so a hyphenated session_id like "my-session" would produce ambiguous parsing
-// in the username string (e.g. USERNAME-zone-res-session-my-session).
+// Country and city must not contain hyphens — Novada uses `-` as the segment
+// delimiter in the proxy username string. Passing country="us-session-injected"
+// would silently forge extra segments (e.g. alice-zone-res-region-us-session-injected).
+const SAFE_COUNTRY = /^[a-zA-Z0-9_]+$/;
+const SAFE_CITY = /^[a-zA-Z0-9_]+$/;
+// session_id also disallows hyphens for the same reason.
 const SAFE_SESSION_ID = /^[a-zA-Z0-9_]+$/;
 /**
  * Build the Novada proxy username with targeting suffixes appended after zone-res.
@@ -113,13 +114,13 @@ export function validateFetchParams(raw) {
         throw new Error("url must start with http:// or https://");
     }
     if (raw.country !== undefined) {
-        if (typeof raw.country !== "string" || !SAFE_PARAM.test(raw.country)) {
-            throw new Error("country must be a 2-letter ISO code (e.g. US, DE, GB)");
+        if (typeof raw.country !== "string" || !SAFE_COUNTRY.test(raw.country)) {
+            throw new Error("country must be a 2-letter ISO code with no hyphens (e.g. US, DE, GB)");
         }
     }
     if (raw.city !== undefined) {
-        if (typeof raw.city !== "string" || !SAFE_PARAM.test(raw.city)) {
-            throw new Error("city must contain only letters, numbers, hyphens, underscores");
+        if (typeof raw.city !== "string" || !SAFE_CITY.test(raw.city)) {
+            throw new Error("city must contain only letters, numbers, underscores (e.g. newyork, london)");
         }
     }
     if (raw.session_id !== undefined) {
@@ -131,7 +132,7 @@ export function validateFetchParams(raw) {
         throw new Error("format must be 'raw' or 'markdown'");
     }
     const timeout = raw.timeout ? Number(raw.timeout) : 60;
-    if (timeout < 1 || timeout > 120) {
+    if (!Number.isFinite(timeout) || timeout < 1 || timeout > 120) {
         throw new Error("timeout must be between 1 and 120 seconds");
     }
     return {

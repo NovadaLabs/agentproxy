@@ -43,12 +43,14 @@ export async function agentproxySearch(
     });
   } catch (err) {
     // Sanitize: never surface the request URL (contains api_key) in error messages
+    // Sanitize api_key from all error paths — it's embedded in the request URL
+    const sanitize = (s: string) => s.replaceAll(novadaApiKey, "***");
     if (axios.isAxiosError(err)) {
       const status = err.response?.status;
-      const msg = String(err.response?.data?.msg || err.message).replace(novadaApiKey, "***");
+      const msg = sanitize(String(err.response?.data?.msg || err.message));
       throw new Error(status ? `Search API HTTP ${status}: ${msg}` : `Search API error: ${msg}`);
     }
-    throw err;
+    throw new Error(sanitize(String(err instanceof Error ? err.message : err)));
   }
 
   const data = response.data;
@@ -60,12 +62,11 @@ export async function agentproxySearch(
     title?: string;
     url?: string;
     link?: string;
-    redirection_link?: string;  // Bing: actual destination URL (link is a click-tracker)
+    redirection_link?: string;
     description?: string;
     snippet?: string;
   }> = data.data?.organic_results || data.organic_results || data.data?.results || data.results || [];
 
-  // Client-side cap: some engines (Bing) ignore num and return 10 regardless
   const results = rawResults.slice(0, num);
 
   if (!results.length) {
@@ -75,7 +76,6 @@ export async function agentproxySearch(
   const lines = [
     `Search: "${query}" via ${engine.toUpperCase()} — ${results.length} results\n`,
     ...results.map((r, i) => {
-      // Prefer redirection_link (Bing gives real URL there; `link` is a click-tracking wrapper)
       const url = r.redirection_link || r.url || r.link || "N/A";
       const desc = r.description || r.snippet || "";
       return `${i + 1}. **${r.title || "Untitled"}**\n   ${url}\n   ${desc}`;
@@ -93,7 +93,7 @@ export function validateSearchParams(raw: Record<string, unknown>): SearchParams
     throw new Error("engine must be 'google' — other engines have known quality issues");
   }
   const num = raw.num ? Number(raw.num) : 10;
-  if (num < 1 || num > 20) throw new Error("num must be between 1 and 20");
+  if (!Number.isFinite(num) || num < 1 || num > 20) throw new Error("num must be between 1 and 20");
   const SAFE_LOCALE = /^[a-zA-Z0-9_-]{1,10}$/;
   if (raw.country && (typeof raw.country !== "string" || !SAFE_LOCALE.test(raw.country as string))) {
     throw new Error("country must be a short locale code (e.g. us, uk, de)");

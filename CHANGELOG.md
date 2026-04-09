@@ -1,5 +1,23 @@
 # Changelog
 
+## v1.4.1 (2026-04-09)
+
+### Security fixes
+- **Country/city hyphen injection** — `SAFE_PARAM` allowed hyphens, enabling a caller to forge proxy username segments via `country="us-session-injected"`. All proxy auth params now use `SAFE_COUNTRY`/`SAFE_CITY`/`SAFE_PARAM` = `/^[a-zA-Z0-9_]+$/` (no hyphens).
+
+### Bug fixes
+- **NaN bypasses timeout validation** — `NaN < 1` and `NaN > 120` are both false, so non-numeric timeout values passed validation and produced `axios({ timeout: NaN })` (no timeout = hung request). Fixed with `Number.isFinite()` guard in fetch, session, render, and search validators. Same fix applied to `num` in search (was returning `[]` silently for NaN).
+- **Non-Axios errors in search re-thrown raw** — network errors not caught by `axios.isAxiosError()` were re-thrown with potential API key exposure in the message. Now sanitized through the same `replaceAll` path.
+
+### Package
+- **Source maps excluded from published tarball** — `files` now explicitly lists `build/**/*.js` and `build/**/*.d.ts`, dropping ~25 KB of `.js.map` files irrelevant to CLI consumers.
+- **CHANGELOG.md added to published tarball** — was missing from `files`.
+
+### Cleanup
+- Stale Bing-era comments removed from `search.ts`.
+
+---
+
 ## v1.4.0 (2026-04-09)
 
 ### What's new

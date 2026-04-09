@@ -1,13 +1,16 @@
 {
   "name": "proxy-veil",
-  "version": "1.4.0",
+  "version": "1.4.1",
   "description": "MCP server for AI agents — residential proxy fetch, geo-targeting, sticky sessions, and web search. Bypass anti-bot systems invisibly. Powered by Novada.",
   "type": "module",
   "bin": {
     "proxy-veil": "build/index.js"
   },
   "files": [
-    "build"
+    "build/**/*.js",
+    "build/**/*.d.ts",
+    "README.md",
+    "CHANGELOG.md"
   ],
   "scripts": {
     "build": "tsc && node --input-type=commonjs -e \"require('fs').chmodSync('build/index.js', '755')\"",
