@@ -1,6 +1,7 @@
 {
   "name": "proxy-veil",
-  "version": "1.5.0",
+  "version": "1.5.2",
+  "mcpName": "io.github.Goldentrii/proxy-veil",
   "description": "MCP server for AI agents — residential proxy fetch, geo-targeting, sticky sessions, and web search. Bypass anti-bot systems invisibly. Powered by Novada.",
   "type": "module",
   "bin": {

@@ -1,0 +1,82 @@
+{
+  "$schema": "https://static.modelcontextprotocol.io/schemas/2025-12-11/server.schema.json",
+  "name": "io.github.Goldentrii/proxy-veil",
+  "description": "Residential proxy MCP server for AI agents — geo-targeting, sticky sessions, anti-bot bypass.",
+  "repository": {
+    "url": "https://github.com/Goldentrii/proxy-veil",
+    "source": "github"
+  },
+  "version": "1.5.2",
+  "packages": [
+    {
+      "registryType": "npm",
+      "identifier": "proxy-veil",
+      "version": "1.5.2",
+      "transport": {
+        "type": "stdio"
+      },
+      "environmentVariables": [
+        {
+          "name": "NOVADA_PROXY_USER",
+          "description": "Novada residential proxy username",
+          "isRequired": false,
+          "isSecret": true
+        },
+        {
+          "name": "NOVADA_PROXY_PASS",
+          "description": "Novada residential proxy password",
+          "isRequired": false,
+          "isSecret": true
+        },
+        {
+          "name": "NOVADA_API_KEY",
+          "description": "Novada Scraper API key for search tool",
+          "isRequired": false,
+          "isSecret": true
+        },
+        {
+          "name": "BRIGHTDATA_USER",
+          "description": "BrightData full username including zone",
+          "isRequired": false,
+          "isSecret": true
+        },
+        {
+          "name": "BRIGHTDATA_PASS",
+          "description": "BrightData proxy password",
+          "isRequired": false,
+          "isSecret": true
+        },
+        {
+          "name": "SMARTPROXY_USER",
+          "description": "Smartproxy username",
+          "isRequired": false,
+          "isSecret": true
+        },
+        {
+          "name": "SMARTPROXY_PASS",
+          "description": "Smartproxy password",
+          "isRequired": false,
+          "isSecret": true
+        },
+        {
+          "name": "OXYLABS_USER",
+          "description": "Oxylabs username",
+          "isRequired": false,
+          "isSecret": true
+        },
+        {
+          "name": "OXYLABS_PASS",
+          "description": "Oxylabs password",
+          "isRequired": false,
+          "isSecret": true
+        },
+        {
+          "name": "PROXY_URL",
+          "description": "Generic HTTP proxy URL (http://user:pass@host:port)",
+          "isRequired": false,
+          "isSecret": true
+        }
+      ]
+    }
+  ]
+}
