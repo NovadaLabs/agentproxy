@@ -59,7 +59,7 @@ describe("render concurrency limiter", () => {
         expect(result).toBe("again");
     });
 });
-describe("PROXY_VEIL_MAX_RENDERS env var parsing", () => {
+describe("PROXY4AGENT_MAX_RENDERS env var parsing", () => {
     function parseMaxRenders(val) {
         const raw = Number(val);
         return Number.isInteger(raw) && raw > 0 && raw <= 20 ? raw : 3;

@@ -50,7 +50,7 @@ export async function agentproxyFetch(params, adapter, credentials) {
     if (unsupported.length) {
         // Surface as a non-fatal note in the output rather than an error
         // so the fetch still proceeds — the params are simply ignored by buildProxyUrl
-        console.error(`[proxy-veil] Warning: ${unsupported.join(", ")}. Switch to Novada for full targeting support.`);
+        console.error(`[proxy4agent] Warning: ${unsupported.join(", ")}. Switch to Novada for full targeting support.`);
     }
     const proxyUrl = adapter.buildProxyUrl(credentials, params);
     // HttpsProxyAgent for HTTPS targets (CONNECT tunnel + TLS); HttpProxyAgent for plain HTTP

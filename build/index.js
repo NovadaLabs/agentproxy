@@ -16,9 +16,9 @@ const NOVADA_API_KEY = process.env.NOVADA_API_KEY;
 const NOVADA_BROWSER_WS = process.env.NOVADA_BROWSER_WS;
 // ─── Render concurrency limiter ─────────────────────────────────────────────
 // Prevents runaway Browser API costs from concurrent render calls.
-// Default max 3 — override with PROXY_VEIL_MAX_RENDERS env var.
+// Default max 3 — override with PROXY4AGENT_MAX_RENDERS env var.
 const MAX_CONCURRENT_RENDERS = (() => {
-    const raw = Number(process.env.PROXY_VEIL_MAX_RENDERS);
+    const raw = Number(process.env.PROXY4AGENT_MAX_RENDERS);
     return Number.isInteger(raw) && raw > 0 && raw <= 20 ? raw : 3;
 })();
 let activeRenders = 0;
@@ -98,7 +98,7 @@ const TOOLS = [
 class ProxyVeilServer {
     server;
     constructor() {
-        this.server = new Server({ name: "proxy-veil", version: VERSION }, { capabilities: { tools: {} } });
+        this.server = new Server({ name: "proxy4agent", version: VERSION }, { capabilities: { tools: {} } });
         this.setupHandlers();
     }
     setupHandlers() {
@@ -122,7 +122,7 @@ class ProxyVeilServer {
                             return this.missingBrowserWsError();
                         if (activeRenders >= MAX_CONCURRENT_RENDERS) {
                             return {
-                                content: [{ type: "text", text: `Error: Too many concurrent renders (limit: ${MAX_CONCURRENT_RENDERS}). Wait for an active render to finish before starting another. Override with PROXY_VEIL_MAX_RENDERS env var.` }],
+                                content: [{ type: "text", text: `Error: Too many concurrent renders (limit: ${MAX_CONCURRENT_RENDERS}). Wait for an active render to finish before starting another. Override with PROXY4AGENT_MAX_RENDERS env var.` }],
                                 isError: true,
                             };
                         }
@@ -223,10 +223,10 @@ class ProxyVeilServer {
                         providers,
                         "",
                         "Recommended — Novada (default):",
-                        "  claude mcp add proxy-veil \\",
+                        "  claude mcp add bestproxy4agents \\",
                         "    -e NOVADA_PROXY_USER=your_username \\",
                         "    -e NOVADA_PROXY_PASS=your_password \\",
-                        "    -- npx -y proxy-veil",
+                        "    -- npx -y bestproxy4agents",
                     ].join("\n"),
                 }],
             isError: true,
@@ -242,7 +242,7 @@ class ProxyVeilServer {
                         "Get your API key: novada.com → Dashboard → API Keys",
                         "",
                         "Then restart with:",
-                        "  claude mcp add proxy-veil -e NOVADA_API_KEY=your_key -- npx -y proxy-veil",
+                        "  claude mcp add bestproxy4agents -e NOVADA_API_KEY=your_key -- npx -y bestproxy4agents",
                     ].join("\n"),
                 }],
             isError: true,
@@ -260,7 +260,7 @@ class ProxyVeilServer {
                         "  It looks like: wss://USER-zone-browser:PASS@upg-scbr.novada.com",
                         "",
                         "Then restart with:",
-                        "  claude mcp add proxy-veil -e NOVADA_BROWSER_WS=your_wss_url -- npx -y proxy-veil",
+                        "  claude mcp add bestproxy4agents -e NOVADA_BROWSER_WS=your_wss_url -- npx -y bestproxy4agents",
                     ].join("\n"),
                 }],
             isError: true,
@@ -287,12 +287,12 @@ if (cliArgs.includes("--help") || cliArgs.includes("-h")) {
     const adapterDocs = listAdapters()
         .map(a => `  ${a.displayName.padEnd(12)} ${a.credentialDocs}`)
         .join("\n");
-    console.log(`proxy-veil v${VERSION} — Residential proxy MCP server for AI agents
+    console.log(`proxy4agent v${VERSION} — Residential proxy MCP server for AI agents
 
 Usage:
-  npx proxy-veil              Start the MCP server
-  npx proxy-veil --list-tools Show available tools
-  npx proxy-veil --help       Show this help
+  npx bestproxy4agents              Start the MCP server
+  npx bestproxy4agents --list-tools Show available tools
+  npx bestproxy4agents --help       Show this help
 
 Supported providers (set credentials for one):
 ${adapterDocs}
@@ -305,10 +305,10 @@ Environment variables:
   NOVADA_BROWSER_WS     Novada Browser API WebSocket URL (for agentproxy_render)
 
 Connect to Claude Code (Novada):
-  claude mcp add proxy-veil \\
+  claude mcp add bestproxy4agents \\
     -e NOVADA_PROXY_USER=your_username \\
     -e NOVADA_PROXY_PASS=your_password \\
-    -- npx -y proxy-veil
+    -- npx -y bestproxy4agents
 
 Tools:
   agentproxy_fetch    Fetch any URL through residential proxy (anti-bot bypass)

@@ -1,17 +1,17 @@
 {
   "$schema": "https://static.modelcontextprotocol.io/schemas/2025-12-11/server.schema.json",
-  "name": "io.github.Goldentrii/proxy-veil",
+  "name": "io.github.Goldentrii/bestproxy4agents",
   "description": "Residential proxy MCP server for AI agents — geo-targeting, sticky sessions, anti-bot bypass.",
   "repository": {
-    "url": "https://github.com/Goldentrii/proxy-veil",
+    "url": "https://github.com/Goldentrii/bestproxy4agents",
     "source": "github"
   },
-  "version": "1.5.2",
+  "version": "1.6.0",
   "packages": [
     {
       "registryType": "npm",
-      "identifier": "proxy-veil",
-      "version": "1.5.2",
+      "identifier": "bestproxy4agents",
+      "version": "1.6.0",
       "transport": {
         "type": "stdio"
       },

@@ -70,7 +70,7 @@ describe("render concurrency limiter", () => {
   });
 });
 
-describe("PROXY_VEIL_MAX_RENDERS env var parsing", () => {
+describe("PROXY4AGENT_MAX_RENDERS env var parsing", () => {
   function parseMaxRenders(val: string | undefined): number {
     const raw = Number(val);
     return Number.isInteger(raw) && raw > 0 && raw <= 20 ? raw : 3;

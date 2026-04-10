@@ -6,7 +6,7 @@ startCommand:
   type: stdio
   configSchema:
     type: object
-    description: "ProxyVeil MCP server configuration. At minimum, provide one proxy provider's credentials."
+    description: "Residential proxy MCP server — bypass Cloudflare/Akamai, geo-target 195+ countries, sticky sessions. Provide at least one proxy provider's credentials."
     properties:
       NOVADA_PROXY_USER:
         type: string
@@ -80,7 +80,7 @@ startCommand:
   commandFunction: |-
     (config) => ({
       command: "npx",
-      args: ["-y", "proxy-veil"],
+      args: ["-y", "bestproxy4agents"],
       env: Object.fromEntries(
         Object.entries(config).filter(([, v]) => v !== undefined && v !== "")
       )

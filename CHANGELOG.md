@@ -90,7 +90,7 @@
 ## v1.4.0 (2026-04-09)
 
 ### What's new
-- **Renamed: `agentproxy` → `proxy-veil`** — previous name was too generic and conflicted with `agent-proxy` on npm. `proxy-veil` is distinctive, available, and captures what the product does (veils AI agent requests behind residential IPs).
+- **Renamed: `agentproxy` → `proxy4agent`** — previous name was too generic and conflicted with `agent-proxy` on npm. `proxy4agent` is distinctive, available, and captures what the product does (veils AI agent requests behind residential IPs).
 - **CHANGELOG.md** — added to track what changed in every version going forward.
 - **`--help` text reordered** — proxy credentials listed first (core product), API key and browser WS listed after (secondary tools).
 - **`http-proxy-agent` added** — `httpAgent` now correctly uses `HttpProxyAgent` for plain HTTP targets; `httpsAgent` uses `HttpsProxyAgent` for HTTPS (CONNECT tunnel + TLS). Both were previously the same `HttpsProxyAgent` instance.
@@ -102,12 +102,12 @@
 - **Render timeout applied twice** — `page.goto()` and `page.waitForSelector()` each received the full timeout, so real elapsed time could be 2× the user-specified value. Fixed with a shared deadline.
 - **`decompress()` silent failure** — when a server declared `Content-Encoding: gzip` but body was undecompressable, the function fell through to returning raw binary as UTF-8. It now throws on explicitly-declared encodings (triggering the retry loop); silent fallback retained only when no header is present.
 - **Legacy `AGENTPROXY_PROXY_HOST` / `AGENTPROXY_PROXY_PORT` env vars removed** — stale after rename, undocumented.
-- **README "Why AgentProxy" heading** — renamed to "Why ProxyVeil".
+- **README "Why AgentProxy" heading** — renamed to "Why Proxy4Agent".
 - **`agentproxy_status` + `agentproxy_session` + `agentproxy_render` URL scheme validation** — all three `validateXxxParams` functions now check `http://`/`https://` prefix at the boundary, consistent with `fetch.ts`.
 - **`agentproxy_search` country/language injection** — `country` and `language` params forwarded to API without validation; now checked against `SAFE_LOCALE` pattern.
 - **`--list-tools` split broke on URLs** — was splitting description on first `.`, which broke descriptions containing `.com` URLs. Now splits on `. ` (period + space).
 - **`node -e require(...)` in ESM package** — `build` script used CommonJS `require` in a `"type": "module"` package; fixed with `--input-type=commonjs`.
-- **Class renamed** — `AgentProxyServer` → `ProxyVeilServer`.
+- **Class renamed** — `AgentProxyServer` → `Proxy4AgentServer`.
 
 ---
 

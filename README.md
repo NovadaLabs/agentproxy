@@ -1,23 +1,23 @@
-# ProxyVeil
+# Proxy4Agent
 
 **Residential proxy MCP server for AI agents.** Route any HTTP request through 2M+ real home devices — Android phones, Windows PCs, Macs — to bypass anti-bot systems, geo-target by country or city, and maintain sticky sessions across multi-step workflows.
 
-[![npm version](https://img.shields.io/npm/v/proxy-veil?label=npm&color=CB3837)](https://npmjs.com/package/proxy-veil)
-[![npm downloads](https://img.shields.io/npm/dw/proxy-veil?label=downloads&color=blue)](https://npmjs.com/package/proxy-veil)
+[![npm version](https://img.shields.io/npm/v/bestproxy4agents?label=npm&color=CB3837)](https://npmjs.com/package/bestproxy4agents)
+[![npm downloads](https://img.shields.io/npm/dw/bestproxy4agents?label=downloads&color=blue)](https://npmjs.com/package/bestproxy4agents)
 [![License: MIT](https://img.shields.io/badge/license-MIT-green)](LICENSE)
 [![Node.js](https://img.shields.io/badge/node-%3E%3D18-brightgreen)](https://nodejs.org)
-[![CI](https://github.com/Goldentrii/proxy-veil/actions/workflows/ci.yml/badge.svg)](https://github.com/Goldentrii/proxy-veil/actions)
-[![Smithery](https://smithery.ai/badge/proxy-veil)](https://smithery.ai/server/proxy-veil)
+[![CI](https://github.com/Goldentrii/proxy4agent/actions/workflows/ci.yml/badge.svg)](https://github.com/Goldentrii/proxy4agent/actions)
+[![Smithery](https://smithery.ai/badge/proxy4agent)](https://smithery.ai/server/proxy4agent)
 
 Works with **Claude Code**, **Cursor**, **Windsurf**, **Cline**, **Continue**, and any MCP-compatible AI agent. Powered by **[Novada](https://www.novada.com)**.
 
 ---
 
-## Why ProxyVeil
+## Why Proxy4Agent
 
-AI agents get blocked on 60–70% of commercial websites. Standard HTTP requests are detected and rejected by Cloudflare, Akamai, DataDome, PerimeterX, and similar systems. ProxyVeil routes your agent through real residential IPs — so it looks indistinguishable from a human browser.
+AI agents get blocked on 60–70% of commercial websites. Standard HTTP requests are detected and rejected by Cloudflare, Akamai, DataDome, PerimeterX, and similar systems. Proxy4Agent routes your agent through real residential IPs — so it looks indistinguishable from a human browser.
 
-| Problem | ProxyVeil |
+| Problem | Proxy4Agent |
 |---------|-----------|
 | Amazon, LinkedIn block your agent | Residential IPs from real home devices |
 | Cloudflare / Akamai bot challenges | Bypassed via real device fingerprints |
@@ -30,7 +30,7 @@ AI agents get blocked on 60–70% of commercial websites. Standard HTTP requests
 
 ## Providers
 
-ProxyVeil works with **any HTTP proxy**. Novada is the built-in default with the deepest integration. BrightData, Smartproxy, and Oxylabs have dedicated adapters with full auto-targeting. Any other provider works via the generic adapter.
+Proxy4Agent works with **any HTTP proxy**. Novada is the built-in default with the deepest integration. BrightData, Smartproxy, and Oxylabs have dedicated adapters with full auto-targeting. Any other provider works via the generic adapter.
 
 **Priority:** Novada → BrightData → Smartproxy → Oxylabs → Generic. First configured provider wins.
 
@@ -39,10 +39,10 @@ ProxyVeil works with **any HTTP proxy**. Novada is the built-in default with the
 Full integration: automatic geo-targeting, city-level targeting, sticky sessions, 195+ countries.
 
 ```bash
-claude mcp add proxy-veil \
+claude mcp add bestproxy4agents \
   -e NOVADA_PROXY_USER=your_username \
   -e NOVADA_PROXY_PASS=your_password \
-  -- npx -y proxy-veil
+  -- npx -y bestproxy4agents
 ```
 
 Get credentials: **[novada.com](https://www.novada.com)** → Dashboard → Residential Proxies → Endpoint Generator
@@ -52,10 +52,10 @@ Get credentials: **[novada.com](https://www.novada.com)** → Dashboard → Resi
 Full integration: automatic country/city/session targeting via BrightData's username-suffix format.
 
 ```bash
-claude mcp add proxy-veil \
+claude mcp add bestproxy4agents \
   -e BRIGHTDATA_USER="brd-customer-abc123-zone-residential" \
   -e BRIGHTDATA_PASS=your_password \
-  -- npx -y proxy-veil
+  -- npx -y bestproxy4agents
 ```
 
 Get credentials: **brightdata.com** → Proxies & Scraping → Residential → Access Parameters
@@ -67,10 +67,10 @@ Get credentials: **brightdata.com** → Proxies & Scraping → Residential → A
 Full integration: automatic country/city/session targeting.
 
 ```bash
-claude mcp add proxy-veil \
+claude mcp add bestproxy4agents \
   -e SMARTPROXY_USER=your_username \
   -e SMARTPROXY_PASS=your_password \
-  -- npx -y proxy-veil
+  -- npx -y bestproxy4agents
 ```
 
 Get credentials: **smartproxy.com** → Dashboard → Residential → Endpoint Generator
@@ -82,10 +82,10 @@ Get credentials: **smartproxy.com** → Dashboard → Residential → Endpoint G
 Full integration: automatic country/city/session targeting.
 
 ```bash
-claude mcp add proxy-veil \
+claude mcp add bestproxy4agents \
   -e OXYLABS_USER=your_username \
   -e OXYLABS_PASS=your_password \
-  -- npx -y proxy-veil
+  -- npx -y bestproxy4agents
 ```
 
 Get credentials: **oxylabs.io** → Dashboard → Residential Proxies → Access Details
@@ -98,14 +98,14 @@ Set `PROXY_URL` to use IPRoyal, your own infrastructure, or any standard HTTP pr
 
 ```bash
 # IPRoyal
-claude mcp add proxy-veil \
+claude mcp add bestproxy4agents \
   -e PROXY_URL="http://username:password@geo.iproyal.com:12321" \
-  -- npx -y proxy-veil
+  -- npx -y bestproxy4agents
 
 # Any HTTP proxy
-claude mcp add proxy-veil \
+claude mcp add bestproxy4agents \
   -e PROXY_URL="http://user:pass@your-proxy-host:port" \
-  -- npx -y proxy-veil
+  -- npx -y bestproxy4agents
 ```
 
 > **Note:** With the generic adapter, encode country/city/session targeting directly in your proxy URL per your provider's format. `country`, `city`, and `session_id` tool parameters are logged as warnings and not forwarded.
@@ -140,28 +140,28 @@ You only need credentials for the tools you use.
 
 **Fetch + Session (core — recommended start):**
 ```bash
-claude mcp add proxy-veil \
+claude mcp add bestproxy4agents \
   -e NOVADA_PROXY_USER=your_username \
   -e NOVADA_PROXY_PASS=your_password \
   -e NOVADA_PROXY_HOST=your_account_host \
-  -- npx -y proxy-veil
+  -- npx -y bestproxy4agents
 ```
 
 **Search only:**
 ```bash
-claude mcp add proxy-veil \
+claude mcp add bestproxy4agents \
   -e NOVADA_API_KEY=your_key \
-  -- npx -y proxy-veil
+  -- npx -y bestproxy4agents
 ```
 
 **All tools:**
 ```bash
-claude mcp add proxy-veil \
+claude mcp add bestproxy4agents \
   -e NOVADA_PROXY_USER=your_username \
   -e NOVADA_PROXY_PASS=your_password \
   -e NOVADA_PROXY_HOST=your_account_host \
   -e NOVADA_API_KEY=your_key \
-  -- npx -y proxy-veil
+  -- npx -y bestproxy4agents
 ```
 
 > **`NOVADA_PROXY_HOST`** — your account-specific proxy host from the Endpoint Generator (e.g. `abc123.vtv.na.novada.pro`). Required for reliable sticky sessions. Defaults to the shared load balancer if omitted.
@@ -170,33 +170,33 @@ claude mcp add proxy-veil \
 
 ## Compatible With
 
-ProxyVeil works with any MCP-compatible AI client:
+Proxy4Agent works with any MCP-compatible AI client:
 
 | Client | Install method |
 |--------|---------------|
-| **Claude Code** | `claude mcp add proxy-veil -e ... -- npx -y proxy-veil` |
-| **Cursor** | Settings → MCP → Add server → `npx -y proxy-veil` |
-| **Windsurf** | MCP config → `npx -y proxy-veil` |
-| **Cline** | MCP settings → command: `npx`, args: `["-y", "proxy-veil"]` |
+| **Claude Code** | `claude mcp add bestproxy4agents -e ... -- npx -y bestproxy4agents` |
+| **Cursor** | Settings → MCP → Add server → `npx -y bestproxy4agents` |
+| **Windsurf** | MCP config → `npx -y bestproxy4agents` |
+| **Cline** | MCP settings → command: `npx`, args: `["-y", "bestproxy4agents"]` |
 | **Continue** | `.continue/config.json` → mcpServers |
-| **Smithery** | [smithery.ai/server/proxy-veil](https://smithery.ai/server/proxy-veil) |
-| **Any MCP client** | stdio transport, `npx -y proxy-veil` |
+| **Smithery** | [smithery.ai/server/proxy4agent](https://smithery.ai/server/proxy4agent) |
+| **Any MCP client** | stdio transport, `npx -y bestproxy4agents` |
 
 **Claude Code** example (copy-paste ready):
 ```bash
-claude mcp add proxy-veil \
+claude mcp add bestproxy4agents \
   -e NOVADA_PROXY_USER=your_username \
   -e NOVADA_PROXY_PASS=your_password \
-  -- npx -y proxy-veil
+  -- npx -y bestproxy4agents
 ```
 
 **Cursor / Windsurf / Cline** — add to your MCP config:
 ```json
 {
   "mcpServers": {
-    "proxy-veil": {
+    "bestproxy4agents": {
       "command": "npx",
-      "args": ["-y", "proxy-veil"],
+      "args": ["-y", "bestproxy4agents"],
       "env": {
         "NOVADA_PROXY_USER": "your_username",
         "NOVADA_PROXY_PASS": "your_password"
@@ -435,6 +435,41 @@ agentproxy_render(url="https://app.example.com/dashboard", wait_for=".data-table
 | [`puppeteer-core`](https://npmjs.com/package/puppeteer-core) | `^22.15` | Browser API — WebSocket connection to Novada's real Chromium cloud |
 
 Lightweight core. Package size: ~52 KB (excluding `node_modules`). `puppeteer-core` is the largest dependency but bundles no browser — it connects to Novada's remote Chromium.
+
+---
+
+## Use Cases
+
+**For AI agents that need to:**
+- Scrape e-commerce sites (Amazon, eBay, Walmart, Shopify) without getting blocked
+- Monitor prices across different countries and markets
+- Access geo-restricted content from 195+ countries
+- Perform competitive intelligence on Cloudflare/Akamai-protected sites
+- Execute multi-step login flows with consistent IP (sticky sessions)
+- Render JavaScript-heavy SPAs that return blank without a real browser
+- Search Google programmatically with clean structured results
+- Collect localized search results from different regions
+- Access professional networks (LinkedIn) behind anti-bot systems
+
+**For developers building:**
+- AI-powered web research tools
+- Price comparison agents
+- Content aggregation pipelines
+- SEO monitoring dashboards
+- Market research automation
+- Lead generation workflows
+
+---
+
+## Feedback & Support
+
+We'd love to hear from you — feature requests, bug reports, or just how you're using proxy4agent:
+
+- **Email:** [tong.wu@novada.com](mailto:tong.wu@novada.com)
+- **GitHub Issues:** [github.com/Goldentrii/proxy4agent/issues](https://github.com/Goldentrii/proxy4agent/issues)
+- **Website:** [novada.com](https://www.novada.com)
+
+Your feedback drives our roadmap. Every bug report and feature request helps make proxy4agent better for all agents and developers.
 
 ---
 
