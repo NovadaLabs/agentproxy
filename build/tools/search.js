@@ -68,10 +68,13 @@ export function validateSearchParams(raw) {
     if (!raw.query || typeof raw.query !== "string") {
         throw new Error("query is required");
     }
+    if (raw.query.length > 500) {
+        throw new Error("query must be 500 characters or less");
+    }
     if (raw.engine && raw.engine !== "google") {
         throw new Error("engine must be 'google' — other engines have known quality issues");
     }
-    const num = raw.num ? Number(raw.num) : 10;
+    const num = raw.num !== undefined ? Number(raw.num) : 10;
     if (!Number.isFinite(num) || num < 1 || num > 20)
         throw new Error("num must be between 1 and 20");
     if (raw.country && (typeof raw.country !== "string" || !SAFE_LOCALE.test(raw.country))) {

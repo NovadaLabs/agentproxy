@@ -16,12 +16,12 @@ export async function agentproxyStatus() {
     }
     const devices = data.device_types
         ? Object.entries(data.device_types)
-            .map(([k, v]) => `${k}: ${v.toLocaleString()}`)
+            .map(([k, v]) => `${k}: ${String(v)}`)
             .join(", ")
         : "unknown";
     return [
         `Proxy Network Status: ${data.status?.toUpperCase() || "UNKNOWN"}`,
-        `Connected nodes: ${data.connected_nodes?.toLocaleString() || 0}`,
+        `Connected nodes: ${data.connected_nodes ?? 0}`,
         `Device breakdown: ${devices}`,
         data.timestamp ? `Last updated: ${data.timestamp}` : "",
     ]

@@ -12,10 +12,11 @@ import {
   agentproxySearch, validateSearchParams,
   agentproxySession, validateSessionParams,
   agentproxyRender, validateRenderParams,
+  agentproxyExtract, validateExtractParams,
   agentproxyStatus,
 } from "./tools/index.js";
 import { resolveAdapter, listAdapters } from "./adapters/index.js";
-import { VERSION } from "./config.js";
+import { VERSION, NPM_PACKAGE } from "./config.js";
 
 // ─── Provider Resolution ─────────────────────────────────────────────────────
 //
@@ -67,7 +68,7 @@ const TOOLS = [
       type: "object" as const,
       properties: {
         url:      { type: "string", description: "The URL to render" },
-        format:   { type: "string", enum: ["markdown", "html", "text"], default: "markdown" },
+        format:   { type: "string", enum: ["markdown", "html", "text"], default: "markdown", description: "markdown strips tags; html returns full HTML; text strips tags + links" },
         wait_for: { type: "string", description: "CSS selector to wait for before extracting (e.g. '.product-title')" },
         timeout:  { type: "number", default: 60, description: "Timeout in seconds (5-120)" },
       },
@@ -91,6 +92,23 @@ const TOOLS = [
     },
   },
   {
+    name: "agentproxy_extract",
+    description:
+      "Extract structured data from any URL through a residential proxy. Fetches the page and extracts named fields (title, price, description, rating, author, date, image, links, headings, etc.) using meta tags, Open Graph, JSON-LD, and HTML patterns. Returns clean key-value output — no HTML parsing needed by the agent.",
+    inputSchema: {
+      type: "object" as const,
+      properties: {
+        url:        { type: "string", description: "The URL to extract data from" },
+        fields:     { type: "array", items: { type: "string" }, description: "Field names to extract: title, price, currency, description, image, rating, review_count, author, date, url, links, headings, h2, or any JSON-LD/meta field name" },
+        country:    { type: "string", description: "2-letter country code for geo-targeting (e.g. US, DE, JP)" },
+        city:       { type: "string", description: "City-level targeting (e.g. newyork, london, tokyo)" },
+        session_id: { type: "string", description: "Reuse same ID to keep the same IP across calls" },
+        timeout:    { type: "number", default: 60, description: "Timeout in seconds (1-120)" },
+      },
+      required: ["url", "fields"],
+    },
+  },
+  {
     name: "agentproxy_session",
     description:
       "Fetch a URL with a sticky session — the same residential IP is used for every call with the same session_id. Use this for multi-step workflows where IP consistency matters: login flows, paginated scraping, price monitoring.",
@@ -102,7 +120,7 @@ const TOOLS = [
         country:    { type: "string", description: "2-letter country code" },
         city:       { type: "string", description: "City-level targeting (e.g. newyork, london, tokyo)" },
         format:     { type: "string", enum: ["markdown", "raw"], default: "markdown" },
-        timeout:    { type: "number", default: 60, description: "Timeout in seconds" },
+        timeout:    { type: "number", default: 60, description: "Timeout in seconds (1-120)" },
       },
       required: ["session_id", "url"],
     },
@@ -120,12 +138,12 @@ const TOOLS = [
 
 // ─── MCP Server ──────────────────────────────────────────────────────────────
 
-class ProxyVeilServer {
+class Proxy4AgentsServer {
   private server: Server;
 
   constructor() {
     this.server = new Server(
-      { name: "proxy4agent", version: VERSION },
+      { name: "proxy4agents-mcp", version: VERSION },
       { capabilities: { tools: {} } }
     );
     this.setupHandlers();
@@ -172,6 +190,15 @@ class ProxyVeilServer {
           case "agentproxy_search": {
             if (!NOVADA_API_KEY) return this.missingApiKeyError();
             result = await agentproxySearch(validateSearchParams(raw), NOVADA_API_KEY);
+            break;
+          }
+          case "agentproxy_extract": {
+            if (!proxyContext) return this.missingProxyError();
+            result = await agentproxyExtract(
+              validateExtractParams(raw),
+              proxyContext.adapter,
+              proxyContext.credentials
+            );
             break;
           }
           case "agentproxy_session": {
@@ -258,10 +285,10 @@ class ProxyVeilServer {
           providers,
           "",
           "Recommended — Novada (default):",
-          "  claude mcp add bestproxy4agents \\",
+          `  claude mcp add ${NPM_PACKAGE} \\`,
           "    -e NOVADA_PROXY_USER=your_username \\",
           "    -e NOVADA_PROXY_PASS=your_password \\",
-          "    -- npx -y bestproxy4agents",
+          `    -- npx -y ${NPM_PACKAGE}`,
         ].join("\n"),
       }],
       isError: true,
@@ -278,7 +305,7 @@ class ProxyVeilServer {
           "Get your API key: novada.com → Dashboard → API Keys",
           "",
           "Then restart with:",
-          "  claude mcp add bestproxy4agents -e NOVADA_API_KEY=your_key -- npx -y bestproxy4agents",
+          `  claude mcp add ${NPM_PACKAGE} -e NOVADA_API_KEY=your_key -- npx -y ${NPM_PACKAGE}`,
         ].join("\n"),
       }],
       isError: true,
@@ -297,7 +324,7 @@ class ProxyVeilServer {
           "  It looks like: wss://USER-zone-browser:PASS@upg-scbr.novada.com",
           "",
           "Then restart with:",
-          "  claude mcp add bestproxy4agents -e NOVADA_BROWSER_WS=your_wss_url -- npx -y bestproxy4agents",
+          `  claude mcp add ${NPM_PACKAGE} -e NOVADA_BROWSER_WS=your_wss_url -- npx -y ${NPM_PACKAGE}`,
         ].join("\n"),
       }],
       isError: true,
@@ -310,7 +337,7 @@ class ProxyVeilServer {
     const provider = proxyContext
       ? `${proxyContext.adapter.displayName} adapter`
       : "no proxy provider";
-    console.error(`ProxyVeil MCP v${VERSION} — ${provider}`);
+    console.error(`Proxy4Agents MCP v${VERSION} — ${provider}`);
   }
 }
 
@@ -330,12 +357,12 @@ if (cliArgs.includes("--help") || cliArgs.includes("-h")) {
     .map(a => `  ${a.displayName.padEnd(12)} ${a.credentialDocs}`)
     .join("\n");
 
-  console.log(`proxy4agent v${VERSION} — Residential proxy MCP server for AI agents
+  console.log(`Proxy4Agents MCP v${VERSION} — Residential proxy MCP server for AI agents
 
 Usage:
-  npx bestproxy4agents              Start the MCP server
-  npx bestproxy4agents --list-tools Show available tools
-  npx bestproxy4agents --help       Show this help
+  npx ${NPM_PACKAGE}              Start the MCP server
+  npx ${NPM_PACKAGE} --list-tools Show available tools
+  npx ${NPM_PACKAGE} --help       Show this help
 
 Supported providers (set credentials for one):
 ${adapterDocs}
@@ -348,13 +375,14 @@ Environment variables:
   NOVADA_BROWSER_WS     Novada Browser API WebSocket URL (for agentproxy_render)
 
 Connect to Claude Code (Novada):
-  claude mcp add bestproxy4agents \\
+  claude mcp add ${NPM_PACKAGE} \\
     -e NOVADA_PROXY_USER=your_username \\
     -e NOVADA_PROXY_PASS=your_password \\
-    -- npx -y bestproxy4agents
+    -- npx -y ${NPM_PACKAGE}
 
 Tools:
   agentproxy_fetch    Fetch any URL through residential proxy (anti-bot bypass)
+  agentproxy_extract  Extract structured data (title, price, etc.) from any URL
   agentproxy_session  Sticky session — same IP across requests
   agentproxy_search   Structured web search via Google
   agentproxy_render   Render JS-heavy pages with real Chromium (Browser API)
@@ -363,7 +391,7 @@ Tools:
   process.exit(0);
 }
 
-const server = new ProxyVeilServer();
+const server = new Proxy4AgentsServer();
 server.run().catch((error) => {
   console.error("Fatal error:", error);
   process.exit(1);

@@ -11,3 +11,6 @@ export { agentproxyStatus } from "./status.js";
 
 export { agentproxyRender, validateRenderParams } from "./render.js";
 export type { RenderParams } from "./render.js";
+
+export { agentproxyExtract, validateExtractParams } from "./extract.js";
+export type { ExtractParams } from "./extract.js";

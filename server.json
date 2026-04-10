@@ -1,17 +1,17 @@
 {
   "$schema": "https://static.modelcontextprotocol.io/schemas/2025-12-11/server.schema.json",
-  "name": "io.github.Goldentrii/bestproxy4agents",
-  "description": "Residential proxy MCP server for AI agents — geo-targeting, sticky sessions, anti-bot bypass.",
+  "name": "io.github.NovadaLabs/proxy4agents-mcp",
+  "description": "Residential proxy MCP server for AI agents — geo-targeting, sticky sessions, anti-bot bypass. Free tier available.",
   "repository": {
-    "url": "https://github.com/Goldentrii/bestproxy4agents",
+    "url": "https://github.com/NovadaLabs/proxy4agent",
     "source": "github"
   },
-  "version": "1.6.0",
+  "version": "1.7.0",
   "packages": [
     {
       "registryType": "npm",
-      "identifier": "bestproxy4agents",
-      "version": "1.6.0",
+      "identifier": "bestproxy4agents-mcp",
+      "version": "1.7.0",
       "transport": {
         "type": "stdio"
       },
@@ -31,6 +31,12 @@
         {
           "name": "NOVADA_API_KEY",
           "description": "Novada Scraper API key for search tool",
+          "isRequired": false,
+          "isSecret": true
+        },
+        {
+          "name": "NOVADA_BROWSER_WS",
+          "description": "Novada Browser API WebSocket URL for render tool",
           "isRequired": false,
           "isSecret": true
         },

@@ -50,12 +50,16 @@ export async function agentproxyFetch(params, adapter, credentials) {
     if (unsupported.length) {
         // Surface as a non-fatal note in the output rather than an error
         // so the fetch still proceeds — the params are simply ignored by buildProxyUrl
-        console.error(`[proxy4agent] Warning: ${unsupported.join(", ")}. Switch to Novada for full targeting support.`);
+        console.error(`[proxy4agents] Warning: ${unsupported.join(", ")}. Switch to Novada for full targeting support.`);
     }
     const proxyUrl = adapter.buildProxyUrl(credentials, params);
     // HttpsProxyAgent for HTTPS targets (CONNECT tunnel + TLS); HttpProxyAgent for plain HTTP
     const httpsAgent = new HttpsProxyAgent(proxyUrl);
     const httpAgent = new HttpProxyAgent(proxyUrl);
+    // Capability warning text to prepend to successful response
+    const capWarning = unsupported.length
+        ? `⚠ Warning: ${unsupported.join(", ")}. These parameters were ignored.\n\n`
+        : "";
     let lastError = null;
     for (let attempt = 1; attempt <= 2; attempt++) {
         try {
@@ -97,16 +101,23 @@ export async function agentproxyFetch(params, adapter, credentials) {
             ]
                 .filter(Boolean)
                 .join(" | ");
-            return `[${meta}]\n\n${finalOutput}`;
+            return `${capWarning}[${meta}]\n\n${finalOutput}`;
         }
         catch (err) {
             lastError = err instanceof Error ? err : new Error(String(err));
+            // Surface rate-limit errors clearly
+            if (axios.isAxiosError(err) && err.response?.status === 429) {
+                throw new Error("Rate limited (HTTP 429). Wait a moment before retrying. Consider using a session_id for consistent routing.");
+            }
             // Only retry on network errors or 5xx — never retry 4xx (auth, not-found, etc.)
             const isRetryable = !(axios.isAxiosError(err) &&
                 err.response &&
                 err.response.status < 500);
-            if (attempt < 2 && isRetryable)
+            if (attempt < 2 && isRetryable) {
+                // Exponential backoff: 500ms before retry
+                await new Promise(r => setTimeout(r, 500 * attempt));
                 continue;
+            }
         }
     }
     throw lastError;
@@ -136,7 +147,7 @@ export function validateFetchParams(raw) {
     if (raw.format && raw.format !== "raw" && raw.format !== "markdown") {
         throw new Error("format must be 'raw' or 'markdown'");
     }
-    const timeout = raw.timeout ? Number(raw.timeout) : 60;
+    const timeout = raw.timeout !== undefined ? Number(raw.timeout) : 60;
     if (!Number.isFinite(timeout) || timeout < 1 || timeout > 120) {
         throw new Error("timeout must be between 1 and 120 seconds");
     }

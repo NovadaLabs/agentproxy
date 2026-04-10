@@ -1,4 +1,4 @@
-# ProxyVeil — Smithery configuration
+# Proxy4Agents MCP — Smithery configuration
 # Smithery uses this file to list and launch the server on its platform.
 # https://smithery.ai
 
@@ -80,7 +80,7 @@ startCommand:
   commandFunction: |-
     (config) => ({
       command: "npx",
-      args: ["-y", "bestproxy4agents"],
+      args: ["-y", "bestproxy4agents-mcp"],
       env: Object.fromEntries(
         Object.entries(config).filter(([, v]) => v !== undefined && v !== "")
       )

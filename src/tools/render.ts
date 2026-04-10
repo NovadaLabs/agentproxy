@@ -95,7 +95,7 @@ export function validateRenderParams(raw: Record<string, unknown>): RenderParams
       throw new Error("wait_for contains invalid characters for a CSS selector");
     }
   }
-  const timeout = raw.timeout ? Number(raw.timeout) : 60;
+  const timeout = raw.timeout !== undefined ? Number(raw.timeout) : 60;
   if (!Number.isFinite(timeout) || timeout < 5 || timeout > 120) throw new Error("timeout must be 5-120 seconds");
   return {
     url: raw.url,

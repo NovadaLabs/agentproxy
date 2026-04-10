@@ -37,7 +37,7 @@ export function validateSessionParams(raw) {
     if (raw.format && raw.format !== "raw" && raw.format !== "markdown") {
         throw new Error("format must be 'raw' or 'markdown'");
     }
-    const timeout = raw.timeout ? Number(raw.timeout) : 60;
+    const timeout = raw.timeout !== undefined ? Number(raw.timeout) : 60;
     if (!Number.isFinite(timeout) || timeout < 1 || timeout > 120) {
         throw new Error("timeout must be between 1 and 120 seconds");
     }

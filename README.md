@@ -1,25 +1,27 @@
-# Proxy4Agent
+# Proxy4Agents MCP
 
 **Residential proxy MCP server for AI agents.** Route any HTTP request through 2M+ real home devices — Android phones, Windows PCs, Macs — to bypass anti-bot systems, geo-target by country or city, and maintain sticky sessions across multi-step workflows.
 
-[![npm version](https://img.shields.io/npm/v/bestproxy4agents?label=npm&color=CB3837)](https://npmjs.com/package/bestproxy4agents)
-[![npm downloads](https://img.shields.io/npm/dw/bestproxy4agents?label=downloads&color=blue)](https://npmjs.com/package/bestproxy4agents)
+[![npm version](https://img.shields.io/npm/v/bestproxy4agents-mcp?label=npm&color=CB3837)](https://npmjs.com/package/bestproxy4agents-mcp)
+[![npm downloads](https://img.shields.io/npm/dw/bestproxy4agents-mcp?label=downloads&color=blue)](https://npmjs.com/package/bestproxy4agents-mcp)
 [![License: MIT](https://img.shields.io/badge/license-MIT-green)](LICENSE)
 [![Node.js](https://img.shields.io/badge/node-%3E%3D18-brightgreen)](https://nodejs.org)
-[![CI](https://github.com/Goldentrii/proxy4agent/actions/workflows/ci.yml/badge.svg)](https://github.com/Goldentrii/proxy4agent/actions)
+[![CI](https://github.com/NovadaLabs/proxy4agent/actions/workflows/ci.yml/badge.svg)](https://github.com/NovadaLabs/proxy4agent/actions)
 [![Smithery](https://smithery.ai/badge/proxy4agent)](https://smithery.ai/server/proxy4agent)
 [![English](https://img.shields.io/badge/lang-English-blue?style=flat-square)](#proxy4agent)
 [![中文文档](https://img.shields.io/badge/lang-中文文档-red?style=flat-square)](#proxy4agent中文文档)
 
 Works with **Claude Code**, **Cursor**, **Windsurf**, **Cline**, **Continue**, and any MCP-compatible AI agent. Powered by **[Novada](https://www.novada.com)**.
 
+> **Free tier available** — sign up at [novada.com](https://www.novada.com), no credit card required. Get free access to Scraper API, Web Unblocker, and residential proxies to start building immediately.
+
 ---
 
-## Why Proxy4Agent
+## Why Proxy4Agents MCP
 
 AI agents get blocked on 60–70% of commercial websites. Standard HTTP requests are detected and rejected by Cloudflare, Akamai, DataDome, PerimeterX, and similar systems. Proxy4Agent routes your agent through real residential IPs — so it looks indistinguishable from a human browser.
 
-| Problem | Proxy4Agent |
+| Problem | Proxy4Agents MCP |
 |---------|-----------|
 | Amazon, LinkedIn block your agent | Residential IPs from real home devices |
 | Cloudflare / Akamai bot challenges | Bypassed via real device fingerprints |
@@ -30,9 +32,31 @@ AI agents get blocked on 60–70% of commercial websites. Standard HTTP requests
 
 ---
 
+## How It Works
+
+```
+┌─────────────┐     MCP (stdio)     ┌──────────────────┐     Proxy Auth     ┌─────────────────┐
+│  AI Agent   │ ──────────────────► │  Proxy4Agents    │ ─────────────────► │  Residential IP  │
+│  (Claude,   │     tool call       │  MCP Server      │     HTTP(S)        │  Network (2M+)   │
+│   Cursor,   │ ◄────────────────── │                  │ ◄───────────────── │                  │
+│   Windsurf) │     markdown/raw    │  Auto-targeting   │     response       │  195+ countries  │
+└─────────────┘                     │  Retry + backoff  │                    │  City-level      │
+                                    │  Credential mgmt  │                    │  Sticky sessions │
+                                    └──────────────────┘                    └─────────────────┘
+                                         │
+                                         │ Provider adapters:
+                                         ├── Novada (default, deepest integration)
+                                         ├── BrightData
+                                         ├── Smartproxy
+                                         ├── Oxylabs
+                                         └── Generic HTTP (any proxy)
+```
+
+---
+
 ## Providers
 
-Proxy4Agent works with **any HTTP proxy**. Novada is the built-in default with the deepest integration. BrightData, Smartproxy, and Oxylabs have dedicated adapters with full auto-targeting. Any other provider works via the generic adapter.
+Proxy4Agents MCP works with **any HTTP proxy**. Novada is the built-in default with the deepest integration. BrightData, Smartproxy, and Oxylabs have dedicated adapters with full auto-targeting. Any other provider works via the generic adapter.
 
 **Priority:** Novada → BrightData → Smartproxy → Oxylabs → Generic. First configured provider wins.
 
@@ -41,10 +65,10 @@ Proxy4Agent works with **any HTTP proxy**. Novada is the built-in default with t
 Full integration: automatic geo-targeting, city-level targeting, sticky sessions, 195+ countries.
 
 ```bash
-claude mcp add bestproxy4agents \
+claude mcp add bestproxy4agents-mcp \
   -e NOVADA_PROXY_USER=your_username \
   -e NOVADA_PROXY_PASS=your_password \
-  -- npx -y bestproxy4agents
+  -- npx -y bestproxy4agents-mcp
 ```
 
 Get credentials: **[novada.com](https://www.novada.com)** → Dashboard → Residential Proxies → Endpoint Generator
@@ -54,10 +78,10 @@ Get credentials: **[novada.com](https://www.novada.com)** → Dashboard → Resi
 Full integration: automatic country/city/session targeting via BrightData's username-suffix format.
 
 ```bash
-claude mcp add bestproxy4agents \
+claude mcp add bestproxy4agents-mcp \
   -e BRIGHTDATA_USER="brd-customer-abc123-zone-residential" \
   -e BRIGHTDATA_PASS=your_password \
-  -- npx -y bestproxy4agents
+  -- npx -y bestproxy4agents-mcp
 ```
 
 Get credentials: **brightdata.com** → Proxies & Scraping → Residential → Access Parameters
@@ -69,10 +93,10 @@ Get credentials: **brightdata.com** → Proxies & Scraping → Residential → A
 Full integration: automatic country/city/session targeting.
 
 ```bash
-claude mcp add bestproxy4agents \
+claude mcp add bestproxy4agents-mcp \
   -e SMARTPROXY_USER=your_username \
   -e SMARTPROXY_PASS=your_password \
-  -- npx -y bestproxy4agents
+  -- npx -y bestproxy4agents-mcp
 ```
 
 Get credentials: **smartproxy.com** → Dashboard → Residential → Endpoint Generator
@@ -84,10 +108,10 @@ Get credentials: **smartproxy.com** → Dashboard → Residential → Endpoint G
 Full integration: automatic country/city/session targeting.
 
 ```bash
-claude mcp add bestproxy4agents \
+claude mcp add bestproxy4agents-mcp \
   -e OXYLABS_USER=your_username \
   -e OXYLABS_PASS=your_password \
-  -- npx -y bestproxy4agents
+  -- npx -y bestproxy4agents-mcp
 ```
 
 Get credentials: **oxylabs.io** → Dashboard → Residential Proxies → Access Details
@@ -100,14 +124,14 @@ Set `PROXY_URL` to use IPRoyal, your own infrastructure, or any standard HTTP pr
 
 ```bash
 # IPRoyal
-claude mcp add bestproxy4agents \
+claude mcp add bestproxy4agents-mcp \
   -e PROXY_URL="http://username:password@geo.iproyal.com:12321" \
-  -- npx -y bestproxy4agents
+  -- npx -y bestproxy4agents-mcp
 
 # Any HTTP proxy
-claude mcp add bestproxy4agents \
+claude mcp add bestproxy4agents-mcp \
   -e PROXY_URL="http://user:pass@your-proxy-host:port" \
-  -- npx -y bestproxy4agents
+  -- npx -y bestproxy4agents-mcp
 ```
 
 > **Note:** With the generic adapter, encode country/city/session targeting directly in your proxy URL per your provider's format. `country`, `city`, and `session_id` tool parameters are logged as warnings and not forwarded.
@@ -124,7 +148,7 @@ claude mcp add bestproxy4agents \
 
 ## Get Your Credentials
 
-Sign up at **[novada.com](https://www.novada.com)** — 30 seconds, no credit card.
+Sign up at **[novada.com](https://www.novada.com)** — 30 seconds, no credit card. **Free tier includes Scraper API, Web Unblocker, and residential proxy access.**
 
 | Tool | Required env vars | Where to get them |
 |------|-------------------|-------------------|
@@ -142,28 +166,28 @@ You only need credentials for the tools you use.
 
 **Fetch + Session (core — recommended start):**
 ```bash
-claude mcp add bestproxy4agents \
+claude mcp add bestproxy4agents-mcp \
   -e NOVADA_PROXY_USER=your_username \
   -e NOVADA_PROXY_PASS=your_password \
   -e NOVADA_PROXY_HOST=your_account_host \
-  -- npx -y bestproxy4agents
+  -- npx -y bestproxy4agents-mcp
 ```
 
 **Search only:**
 ```bash
-claude mcp add bestproxy4agents \
+claude mcp add bestproxy4agents-mcp \
   -e NOVADA_API_KEY=your_key \
-  -- npx -y bestproxy4agents
+  -- npx -y bestproxy4agents-mcp
 ```
 
 **All tools:**
 ```bash
-claude mcp add bestproxy4agents \
+claude mcp add bestproxy4agents-mcp \
   -e NOVADA_PROXY_USER=your_username \
   -e NOVADA_PROXY_PASS=your_password \
   -e NOVADA_PROXY_HOST=your_account_host \
   -e NOVADA_API_KEY=your_key \
-  -- npx -y bestproxy4agents
+  -- npx -y bestproxy4agents-mcp
 ```
 
 > **`NOVADA_PROXY_HOST`** — your account-specific proxy host from the Endpoint Generator (e.g. `abc123.vtv.na.novada.pro`). Required for reliable sticky sessions. Defaults to the shared load balancer if omitted.
@@ -172,33 +196,33 @@ claude mcp add bestproxy4agents \
 
 ## Compatible With
 
-Proxy4Agent works with any MCP-compatible AI client:
+Proxy4Agents MCP works with any MCP-compatible AI client:
 
 | Client | Install method |
 |--------|---------------|
-| **Claude Code** | `claude mcp add bestproxy4agents -e ... -- npx -y bestproxy4agents` |
-| **Cursor** | Settings → MCP → Add server → `npx -y bestproxy4agents` |
-| **Windsurf** | MCP config → `npx -y bestproxy4agents` |
-| **Cline** | MCP settings → command: `npx`, args: `["-y", "bestproxy4agents"]` |
+| **Claude Code** | `claude mcp add bestproxy4agents-mcp -e ... -- npx -y bestproxy4agents-mcp` |
+| **Cursor** | Settings → MCP → Add server → `npx -y bestproxy4agents-mcp` |
+| **Windsurf** | MCP config → `npx -y bestproxy4agents-mcp` |
+| **Cline** | MCP settings → command: `npx`, args: `["-y", "bestproxy4agents-mcp"]` |
 | **Continue** | `.continue/config.json` → mcpServers |
 | **Smithery** | [smithery.ai/server/proxy4agent](https://smithery.ai/server/proxy4agent) |
-| **Any MCP client** | stdio transport, `npx -y bestproxy4agents` |
+| **Any MCP client** | stdio transport, `npx -y bestproxy4agents-mcp` |
 
 **Claude Code** example (copy-paste ready):
 ```bash
-claude mcp add bestproxy4agents \
+claude mcp add bestproxy4agents-mcp \
   -e NOVADA_PROXY_USER=your_username \
   -e NOVADA_PROXY_PASS=your_password \
-  -- npx -y bestproxy4agents
+  -- npx -y bestproxy4agents-mcp
 ```
 
 **Cursor / Windsurf / Cline** — add to your MCP config:
 ```json
 {
   "mcpServers": {
-    "bestproxy4agents": {
+    "bestproxy4agents-mcp": {
       "command": "npx",
-      "args": ["-y", "bestproxy4agents"],
+      "args": ["-y", "bestproxy4agents-mcp"],
       "env": {
         "NOVADA_PROXY_USER": "your_username",
         "NOVADA_PROXY_PASS": "your_password"
@@ -465,13 +489,13 @@ Lightweight core. Package size: ~52 KB (excluding `node_modules`). `puppeteer-co
 
 ## Feedback & Support
 
-We'd love to hear from you — feature requests, bug reports, or just how you're using proxy4agent:
+We'd love to hear from you — feature requests, bug reports, or just how you're using Proxy4Agents MCP:
 
 - **Email:** [tong.wu@novada.com](mailto:tong.wu@novada.com)
-- **GitHub Issues:** [github.com/Goldentrii/proxy4agent/issues](https://github.com/Goldentrii/proxy4agent/issues)
+- **GitHub Issues:** [github.com/NovadaLabs/proxy4agent/issues](https://github.com/NovadaLabs/proxy4agent/issues)
 - **Website:** [novada.com](https://www.novada.com)
 
-Your feedback drives our roadmap. Every bug report and feature request helps make proxy4agent better for all agents and developers.
+Your feedback drives our roadmap. Every bug report and feature request helps make Proxy4Agents MCP better for all agents and developers.
 
 ---
 
@@ -498,7 +522,7 @@ See [LICENSE](LICENSE) for full text.
 
 ---
 
-# Proxy4Agent（中文文档）
+# Proxy4Agents MCP（中文文档）
 
 > **AI 智能体的住宅代理 MCP 服务器。** 通过 200 万+ 真实家庭设备路由 HTTP 请求，绕过反机器人系统，按国家/城市定位，跨请求保持同一 IP。
 
@@ -541,21 +565,21 @@ AI 智能体在 60-70% 的商业网站上被封锁。标准 HTTP 请求会被 Cl
 
 ```bash
 # Novada（推荐）
-claude mcp add bestproxy4agents \
+claude mcp add bestproxy4agents-mcp \
   -e NOVADA_PROXY_USER=你的用户名 \
   -e NOVADA_PROXY_PASS=你的密码 \
-  -- npx -y bestproxy4agents
+  -- npx -y bestproxy4agents-mcp
 
 # BrightData
-claude mcp add bestproxy4agents \
+claude mcp add bestproxy4agents-mcp \
   -e BRIGHTDATA_USER="brd-customer-abc123-zone-residential" \
   -e BRIGHTDATA_PASS=你的密码 \
-  -- npx -y bestproxy4agents
+  -- npx -y bestproxy4agents-mcp
 
 # 任意 HTTP 代理
-claude mcp add bestproxy4agents \
+claude mcp add bestproxy4agents-mcp \
   -e PROXY_URL="http://user:pass@host:port" \
-  -- npx -y bestproxy4agents
+  -- npx -y bestproxy4agents-mcp
 ```
 
 获取 Novada 凭证：**[novada.com](https://www.novada.com)** → 仪表盘 → 住宅代理 → 端点生成器
@@ -597,7 +621,7 @@ claude mcp add bestproxy4agents \
 ## 反馈与支持
 
 - **邮箱：** [tong.wu@novada.com](mailto:tong.wu@novada.com)
-- **GitHub Issues：** [github.com/Goldentrii/proxy4agent/issues](https://github.com/Goldentrii/proxy4agent/issues)
+- **GitHub Issues：** [github.com/NovadaLabs/proxy4agent/issues](https://github.com/NovadaLabs/proxy4agent/issues)
 - **网站：** [novada.com](https://www.novada.com)
 
 ---
