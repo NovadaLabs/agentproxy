@@ -8,6 +8,8 @@
 [![Node.js](https://img.shields.io/badge/node-%3E%3D18-brightgreen)](https://nodejs.org)
 [![CI](https://github.com/Goldentrii/proxy4agent/actions/workflows/ci.yml/badge.svg)](https://github.com/Goldentrii/proxy4agent/actions)
 [![Smithery](https://smithery.ai/badge/proxy4agent)](https://smithery.ai/server/proxy4agent)
+[![English](https://img.shields.io/badge/lang-English-blue?style=flat-square)](#proxy4agent)
+[![中文文档](https://img.shields.io/badge/lang-中文文档-red?style=flat-square)](#proxy4agent中文文档)
 
 Works with **Claude Code**, **Cursor**, **Windsurf**, **Cline**, **Continue**, and any MCP-compatible AI agent. Powered by **[Novada](https://www.novada.com)**.
 
@@ -491,3 +493,115 @@ Permission is hereby granted, free of charge, to any person obtaining a copy of 
 **The software is provided "as is", without warranty of any kind.**
 
 See [LICENSE](LICENSE) for full text.
+
+---
+
+---
+
+# Proxy4Agent（中文文档）
+
+> **AI 智能体的住宅代理 MCP 服务器。** 通过 200 万+ 真实家庭设备路由 HTTP 请求，绕过反机器人系统，按国家/城市定位，跨请求保持同一 IP。
+
+[![返回英文](https://img.shields.io/badge/lang-English-blue?style=flat-square)](#proxy4agent)
+
+支持 **Claude Code**、**Cursor**、**Windsurf**、**Cline**、**Continue** 及所有 MCP 兼容智能体。由 **[Novada](https://www.novada.com)** 提供支持。
+
+---
+
+## 为什么选择 Proxy4Agent
+
+AI 智能体在 60-70% 的商业网站上被封锁。标准 HTTP 请求会被 Cloudflare、Akamai、DataDome 等系统检测并拒绝。Proxy4Agent 通过真实住宅 IP 路由请求 — 与人类浏览器无法区分。
+
+| 问题 | Proxy4Agent |
+|------|-------------|
+| Amazon、LinkedIn 封锁你的智能体 | 来自真实家庭设备的住宅 IP |
+| Cloudflare / Akamai 机器人检测 | 通过真实设备指纹绕过 |
+| JS 渲染页面返回空白 | 浏览器 API 运行真实 Chromium |
+| 地区限制或本地化内容 | 195+ 国家，城市级定位 |
+| 多步骤工作流丢失会话 | 粘性会话 — 同一 IP 跨请求 |
+| 需要结构化搜索结果 | 内置 Google 搜索，输出 JSON |
+
+---
+
+## 支持的代理提供商
+
+优先级：Novada → BrightData → Smartproxy → Oxylabs → 通用 HTTP。首个配置的提供商生效。
+
+| 功能 | Novada | BrightData | Smartproxy | Oxylabs | 通用 HTTP |
+|------|--------|------------|------------|---------|----------|
+| 自动国家定位 | ✓ | ✓ | ✓ | ✓ | 手动 |
+| 自动城市定位 | ✓ | ✓ | ✓ | ✓ | 手动 |
+| 粘性会话 | ✓ | ✓ | ✓ | ✓ | 手动 |
+| 搜索 API | ✓ | — | — | — | — |
+| 浏览器 API (JS 渲染) | ✓ | — | — | — | — |
+
+---
+
+## 快速开始
+
+```bash
+# Novada（推荐）
+claude mcp add bestproxy4agents \
+  -e NOVADA_PROXY_USER=你的用户名 \
+  -e NOVADA_PROXY_PASS=你的密码 \
+  -- npx -y bestproxy4agents
+
+# BrightData
+claude mcp add bestproxy4agents \
+  -e BRIGHTDATA_USER="brd-customer-abc123-zone-residential" \
+  -e BRIGHTDATA_PASS=你的密码 \
+  -- npx -y bestproxy4agents
+
+# 任意 HTTP 代理
+claude mcp add bestproxy4agents \
+  -e PROXY_URL="http://user:pass@host:port" \
+  -- npx -y bestproxy4agents
+```
+
+获取 Novada 凭证：**[novada.com](https://www.novada.com)** → 仪表盘 → 住宅代理 → 端点生成器
+
+---
+
+## 5 个 MCP 工具
+
+| 工具 | 功能 |
+|------|------|
+| `agentproxy_fetch` | 通过住宅代理获取任何 URL。支持国家/城市/会话定位。 |
+| `agentproxy_session` | 粘性会话 — 同一 session_id 使用同一 IP。用于登录流程、分页抓取。 |
+| `agentproxy_search` | Google 搜索，返回标题、URL、描述。无需 HTML 解析。 |
+| `agentproxy_render` | 用真实 Chromium 渲染 JS 页面（SPA、React/Vue 应用）。 |
+| `agentproxy_status` | 检查代理网络健康状态。无需凭证。 |
+
+---
+
+## 使用场景
+
+**AI 智能体需要：**
+- 抓取电商网站（Amazon、eBay、Walmart、Shopify）不被封锁
+- 跨国家监控价格
+- 访问 195+ 国家的地区限制内容
+- 对 Cloudflare/Akamai 保护的站点进行竞争情报收集
+- 执行多步登录流程并保持同一 IP
+- 渲染无真实浏览器就返回空白的 JS 页面
+- 获取不同地区的本地化搜索结果
+
+**开发者构建：**
+- AI 驱动的网页研究工具
+- 价格比较智能体
+- 内容聚合管道
+- SEO 监控仪表盘
+- 市场调研自动化
+
+---
+
+## 反馈与支持
+
+- **邮箱：** [tong.wu@novada.com](mailto:tong.wu@novada.com)
+- **GitHub Issues：** [github.com/Goldentrii/proxy4agent/issues](https://github.com/Goldentrii/proxy4agent/issues)
+- **网站：** [novada.com](https://www.novada.com)
+
+---
+
+## 许可证
+
+MIT © [Novada](https://www.novada.com)

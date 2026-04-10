@@ -1,6 +1,6 @@
 {
   "name": "bestproxy4agents",
-  "version": "1.6.0",
+  "version": "1.6.2",
   "mcpName": "io.github.Goldentrii/proxy4agent",
   "description": "Residential proxy MCP server for AI agents — bypass Cloudflare/Akamai, geo-target 195+ countries, sticky sessions, Google search. Works with Claude, Cursor, Windsurf. Multi-provider: Novada, BrightData, Smartproxy, Oxylabs.",
   "type": "module",
