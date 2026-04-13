@@ -1,4 +1,4 @@
-export const VERSION = "1.7.1";
+export const VERSION = "1.7.2";
 // npm package name — used in CLI help and error messages
 export const NPM_PACKAGE = "bestproxy4agents-mcp";
 

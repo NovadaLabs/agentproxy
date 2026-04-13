@@ -5,6 +5,10 @@ import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js"
 import {
   CallToolRequestSchema,
   ListToolsRequestSchema,
+  ListPromptsRequestSchema,
+  GetPromptRequestSchema,
+  ListResourcesRequestSchema,
+  ReadResourceRequestSchema,
 } from "@modelcontextprotocol/sdk/types.js";
 import axios, { AxiosError } from "axios";
 import {
@@ -238,9 +242,11 @@ class Proxy4AgentsServer {
   constructor() {
     this.server = new Server(
       { name: "proxy4agents-mcp", version: VERSION },
-      { capabilities: { tools: {} } }
+      { capabilities: { tools: {}, prompts: {}, resources: {} } }
     );
     this.setupHandlers();
+    this.registerPrompts();
+    this.registerResources();
   }
 
   private setupHandlers(): void {
@@ -415,6 +421,270 @@ class Proxy4AgentsServer {
       content: [{ type: "text" as const, text: JSON.stringify(errResp, null, 2) }],
       isError: true,
     };
+  }
+
+  // ─── Prompts ─────────────────────────────────────────────────────────────────
+
+  private registerPrompts(): void {
+    const PROMPTS = [
+      {
+        name: "fetch_url",
+        description: "Fetch a URL through a residential proxy and return the content. Bypasses Cloudflare, Akamai, and most anti-bot systems.",
+        arguments: [
+          { name: "url", description: "The URL to fetch (must start with http:// or https://)", required: true },
+          { name: "country", description: "2-letter country code for geo-targeting (e.g. US, DE, JP)", required: false },
+          { name: "format", description: "Output format: 'markdown' (default) strips HTML tags, 'raw' returns full HTML", required: false },
+        ],
+      },
+      {
+        name: "research_topic",
+        description: "Search the web for a topic and read the top results. Uses agentproxy_search to find URLs, then agentproxy_batch_fetch to read them in parallel.",
+        arguments: [
+          { name: "query", description: "Search query (e.g. 'residential proxy for AI agents 2024')", required: true },
+          { name: "num_results", description: "Number of results to fetch (1-10, default 5)", required: false },
+          { name: "country", description: "Localize search results (e.g. us, de, jp)", required: false },
+        ],
+      },
+      {
+        name: "extract_product",
+        description: "Extract structured product data (title, price, description, rating) from any e-commerce URL. Works on Amazon, eBay, Shopify stores, and more.",
+        arguments: [
+          { name: "url", description: "Product page URL", required: true },
+          { name: "fields", description: "Comma-separated fields to extract: title, price, description, rating, image, currency (default: title,price,description,rating)", required: false },
+        ],
+      },
+      {
+        name: "crawl_site",
+        description: "Discover all internal links on a website, then fetch them in parallel. Use for full-site content extraction or sitemap generation.",
+        arguments: [
+          { name: "url", description: "Starting URL (e.g. https://example.com)", required: true },
+          { name: "limit", description: "Max pages to crawl (10-100, default 20)", required: false },
+          { name: "country", description: "2-letter country code for geo-targeting", required: false },
+        ],
+      },
+    ];
+
+    this.server.setRequestHandler(ListPromptsRequestSchema, async () => ({
+      prompts: PROMPTS,
+    }));
+
+    this.server.setRequestHandler(GetPromptRequestSchema, async (request) => {
+      const { name, arguments: args = {} } = request.params;
+
+      if (name === "fetch_url") {
+        const url     = (args.url as string)     || "https://example.com";
+        const country = (args.country as string) || "US";
+        const format  = (args.format as string)  || "markdown";
+        return {
+          description: "Fetch a URL through residential proxy",
+          messages: [{
+            role: "user" as const,
+            content: {
+              type: "text" as const,
+              text: `Use the agentproxy_fetch tool to fetch this URL through a residential proxy:\n\nurl: ${url}\ncountry: ${country}\nformat: ${format}\n\nReturn the page content. If you get a BOT_DETECTION_SUSPECTED error, retry with agentproxy_render instead.`,
+            },
+          }],
+        };
+      }
+
+      if (name === "research_topic") {
+        const query      = (args.query as string)       || "AI agent tools 2024";
+        const numResults = (args.num_results as string) || "5";
+        const country    = (args.country as string)     || "us";
+        return {
+          description: "Search + batch read workflow",
+          messages: [{
+            role: "user" as const,
+            content: {
+              type: "text" as const,
+              text: `Research this topic using the proxy tools:\n\n1. Use agentproxy_search with query="${query}", num=${numResults}, country="${country}" to find relevant URLs\n2. Use agentproxy_batch_fetch with the URLs from step 1 (concurrency=3, format="markdown")\n3. Summarize the key findings from all pages\n\nReturn a structured summary with source URLs.`,
+            },
+          }],
+        };
+      }
+
+      if (name === "extract_product") {
+        const url    = (args.url as string)    || "https://example.com/product";
+        const fields = (args.fields as string) || "title,price,description,rating";
+        return {
+          description: "Extract product data from URL",
+          messages: [{
+            role: "user" as const,
+            content: {
+              type: "text" as const,
+              text: `Extract product data from this URL using agentproxy_extract:\n\nurl: ${url}\nfields: [${fields.split(",").map(f => `"${f.trim()}"`).join(", ")}]\nrender_fallback: true\n\nReturn the extracted fields as a JSON object. If a field is null, note that it was not found on the page.`,
+            },
+          }],
+        };
+      }
+
+      if (name === "crawl_site") {
+        const url     = (args.url as string)    || "https://example.com";
+        const limit   = (args.limit as string)  || "20";
+        const country = (args.country as string) || "US";
+        return {
+          description: "Discover + batch crawl a site",
+          messages: [{
+            role: "user" as const,
+            content: {
+              type: "text" as const,
+              text: `Crawl this site using the map→batch pipeline:\n\n1. Use agentproxy_map with url="${url}", limit=${limit}, country="${country}" to discover all internal URLs\n2. Use agentproxy_batch_fetch with the internal_urls array from step 1 (concurrency=5, format="markdown")\n3. Return a summary of all pages found with their titles and key content\n\nNote: Check meta.cache_hit on each result — cached pages cost zero proxy credits.`,
+            },
+          }],
+        };
+      }
+
+      throw new Error(`Prompt not found: ${name}`);
+    });
+  }
+
+  // ─── Resources ───────────────────────────────────────────────────────────────
+
+  private registerResources(): void {
+    const RESOURCES = [
+      {
+        uri: "proxy://countries",
+        name: "Supported Countries",
+        description: "Complete list of 195+ country codes supported for geo-targeting. Use these with the country parameter in any tool.",
+        mimeType: "text/plain",
+      },
+      {
+        uri: "proxy://error-codes",
+        name: "Error Code Reference",
+        description: "All typed error codes returned by proxy tools, with recovery instructions for each.",
+        mimeType: "application/json",
+      },
+      {
+        uri: "proxy://workflows",
+        name: "Workflow Templates",
+        description: "Common agent workflow patterns: site crawl, research pipeline, price monitoring, sticky session scraping.",
+        mimeType: "text/plain",
+      },
+    ];
+
+    this.server.setRequestHandler(ListResourcesRequestSchema, async () => ({
+      resources: RESOURCES,
+    }));
+
+    this.server.setRequestHandler(ReadResourceRequestSchema, async (request) => {
+      const { uri } = request.params;
+
+      if (uri === "proxy://countries") {
+        return {
+          contents: [{
+            uri,
+            mimeType: "text/plain",
+            text: [
+              "Supported country codes for geo-targeting (use 2-letter ISO codes):",
+              "",
+              "Americas: US CA MX BR AR CL CO PE VE",
+              "Europe:   GB DE FR IT ES NL PL SE NO DK FI CH AT BE PT CZ HU RO UA TR",
+              "Asia:     JP KR CN HK TW SG IN PK BD TH VN ID MY PH",
+              "Middle East & Africa: IL SA AE ZA NG EG MA KE",
+              "Oceania: AU NZ",
+              "",
+              "City-level targeting (use with city= parameter):",
+              "US: newyork losangeles chicago houston phoenix",
+              "UK: london manchester birmingham",
+              "EU: paris berlin amsterdam madrid rome stockholm",
+              "Asia: tokyo seoul singapore tokyo beijing shanghai mumbai",
+              "Other: sydney toronto dubai saopaulo",
+              "",
+              "Total: 195+ countries supported. See novada.com for full list.",
+            ].join("\n"),
+          }],
+        };
+      }
+
+      if (uri === "proxy://error-codes") {
+        const errorCodes = {
+          error_codes: [
+            { code: "BOT_DETECTION_SUSPECTED", recoverable: true, http_status: "4xx", action: "Retry with agentproxy_render or different country parameter" },
+            { code: "TLS_ERROR", recoverable: true, cause: "TLS/SSL handshake failed through proxy", action: "Retry with different country parameter" },
+            { code: "TIMEOUT", recoverable: true, cause: "Request exceeded timeout limit", action: "Increase timeout parameter (max 120s) or retry" },
+            { code: "RATE_LIMITED", recoverable: true, http_status: "429", action: "Wait 5 seconds and retry. Reduce request frequency." },
+            { code: "NETWORK_ERROR", recoverable: false, cause: "DNS resolution failed — hostname not found", action: "Verify the URL is correct and the domain exists" },
+            { code: "SESSION_STICKINESS_FAILED", recoverable: true, cause: "Same IP not maintained across session calls", action: "Retry with verify_sticky:true to confirm before relying on it" },
+            { code: "INVALID_INPUT", recoverable: false, cause: "Bad parameter value (validation failed)", action: "Fix the parameter and retry. Check inputSchema for valid values." },
+            { code: "PROVIDER_NOT_CONFIGURED", recoverable: false, cause: "Required environment variable not set", action: "Set credentials and restart the MCP server" },
+            { code: "UNKNOWN_ERROR", recoverable: true, cause: "Unexpected error", action: "Check agentproxy_status for network health, then retry" },
+          ],
+          response_format: {
+            ok: false,
+            error: {
+              code: "ERROR_CODE",
+              message: "Human-readable description",
+              recoverable: "boolean — whether retrying may succeed",
+              agent_instruction: "Exact next step for the agent to take",
+              retry_after_seconds: "optional — minimum wait before retry",
+            },
+          },
+        };
+        return {
+          contents: [{
+            uri,
+            mimeType: "application/json",
+            text: JSON.stringify(errorCodes, null, 2),
+          }],
+        };
+      }
+
+      if (uri === "proxy://workflows") {
+        return {
+          contents: [{
+            uri,
+            mimeType: "text/plain",
+            text: [
+              "=== Proxy4Agents MCP — Common Workflow Patterns ===",
+              "",
+              "--- 1. Site Crawl Pipeline (map → batch) ---",
+              "Goal: read all pages on a site",
+              "  agentproxy_map(url, limit=50)",
+              "    → returns internal_urls[] (1 credit, ~4s)",
+              "  agentproxy_batch_fetch(urls=internal_urls, concurrency=5)",
+              "    → fetches all pages in parallel (N credits, ~4s wall time)",
+              "",
+              "--- 2. Research Pipeline (search → batch) ---",
+              "Goal: find and read top pages on a topic",
+              "  agentproxy_search(query, num=5)",
+              "    → structured JSON: titles + URLs + snippets",
+              "  agentproxy_batch_fetch(urls=result_urls, format='markdown')",
+              "    → full content of all pages in parallel",
+              "",
+              "--- 3. Sticky Session (login + multi-page) ---",
+              "Goal: scrape authenticated pages with same IP",
+              "  agentproxy_session(session_id='job001', url='/login')",
+              "  agentproxy_session(session_id='job001', url='/dashboard')",
+              "  agentproxy_session(session_id='job001', url='/data/page/1')",
+              "  # Same IP guaranteed across all calls",
+              "",
+              "--- 4. Price Monitoring (geo comparison) ---",
+              "Goal: same product, different markets",
+              "  agentproxy_fetch(url=product_url, country='US')",
+              "  agentproxy_fetch(url=product_url, country='DE')",
+              "  agentproxy_fetch(url=product_url, country='JP')",
+              "  # 2nd+ calls per URL are cache hits (0ms, 0 credits)",
+              "",
+              "--- 5. Structured Extraction (with JS fallback) ---",
+              "Goal: get product fields without HTML parsing",
+              "  agentproxy_extract(",
+              "    url=product_url,",
+              "    fields=['title', 'price', 'description', 'rating'],",
+              "    render_fallback=true  # auto-escalates to Chromium if blocked",
+              "  )",
+              "",
+              "--- Response Cache Notes ---",
+              "  cache_hit=true  → served from cache, 0 proxy credits used",
+              "  cache_hit=false → live proxy fetch, 1 credit used",
+              "  TTL: 300s default. Disable: PROXY4AGENT_CACHE_TTL_SECONDS=0",
+              "  Sessions with session_id are never cached.",
+            ].join("\n"),
+          }],
+        };
+      }
+
+      throw new Error(`Resource not found: ${uri}`);
+    });
   }
 
   private missingBrowserWsError() {

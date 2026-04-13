@@ -9,6 +9,7 @@
 [![CI](https://github.com/NovadaLabs/proxy4agent/actions/workflows/ci.yml/badge.svg)](https://github.com/NovadaLabs/proxy4agent/actions)
 [![Smithery](https://smithery.ai/badge/proxy4agent)](https://smithery.ai/server/proxy4agent)
 [![8 tools](https://img.shields.io/badge/tools-8-orange)](https://github.com/NovadaLabs/proxy4agent#tools)
+[![MCP Badge](https://lobehub.com/badge/mcp/novadalabs-proxy4agent)](https://lobehub.com/mcp/novadalabs-proxy4agent)
 [![English](https://img.shields.io/badge/lang-English-blue?style=flat-square)](#proxy4agents-mcp)
 [![中文文档](https://img.shields.io/badge/lang-中文文档-red?style=flat-square)](#proxy4agents-mcp中文文档)
 
