@@ -4,6 +4,8 @@ import { validateSessionParams } from "../tools/session.js";
 import { validateRenderParams } from "../tools/render.js";
 import { validateSearchParams } from "../tools/search.js";
 import { validateBatchFetchParams } from "../tools/batch.js";
+import { validateExtractParams } from "../tools/extract.js";
+import { validateMapParams } from "../tools/map.js";
 
 // ─── Fetch validator ──────────────────────────────────────
 
@@ -278,5 +280,125 @@ describe("validateBatchFetchParams", () => {
   it("rejects timeout out of range", () => {
     expect(() => validateBatchFetchParams({ urls: validUrls, timeout: 0 })).toThrow();
     expect(() => validateBatchFetchParams({ urls: validUrls, timeout: 121 })).toThrow();
+  });
+});
+
+// ─── Extract validator ──────────────────────────────────
+
+describe("validateExtractParams", () => {
+  it("accepts valid params with url and fields array", () => {
+    const p = validateExtractParams({ url: "https://example.com", fields: ["title", "price"] });
+    expect(p.url).toBe("https://example.com");
+    expect(p.fields).toEqual(["title", "price"]);
+    expect(p.timeout).toBe(60);
+    expect(p.render_fallback).toBe(false);
+  });
+
+  it("rejects missing url", () => {
+    expect(() => validateExtractParams({ fields: ["title"] })).toThrow("url is required");
+  });
+
+  it("rejects non-http url", () => {
+    expect(() => validateExtractParams({ url: "ftp://bad.com", fields: ["title"] })).toThrow("http://");
+  });
+
+  it("rejects missing fields", () => {
+    expect(() => validateExtractParams({ url: "https://example.com" })).toThrow("fields is required");
+  });
+
+  it("rejects fields that is not an array", () => {
+    expect(() => validateExtractParams({ url: "https://example.com", fields: "title" })).toThrow("fields is required");
+  });
+
+  it("rejects empty fields array", () => {
+    expect(() => validateExtractParams({ url: "https://example.com", fields: [] })).toThrow("fields is required");
+  });
+
+  it("rejects fields with more than 20 elements", () => {
+    const tooMany = Array.from({ length: 21 }, (_, i) => `field${i}`);
+    expect(() => validateExtractParams({ url: "https://example.com", fields: tooMany })).toThrow("at most 20");
+  });
+
+  it("rejects non-string field element", () => {
+    expect(() => validateExtractParams({ url: "https://example.com", fields: [42] })).toThrow("string");
+  });
+
+  it("rejects field string over 50 chars", () => {
+    const longField = "a".repeat(51);
+    expect(() => validateExtractParams({ url: "https://example.com", fields: [longField] })).toThrow("50");
+  });
+
+  it("rejects country with hyphens", () => {
+    expect(() => validateExtractParams({ url: "https://example.com", fields: ["title"], country: "us-bad" })).toThrow();
+  });
+
+  it("rejects session_id with hyphens", () => {
+    expect(() => validateExtractParams({ url: "https://example.com", fields: ["title"], session_id: "my-session" })).toThrow();
+  });
+
+  it("rejects timeout out of range", () => {
+    expect(() => validateExtractParams({ url: "https://example.com", fields: ["title"], timeout: 0 })).toThrow();
+    expect(() => validateExtractParams({ url: "https://example.com", fields: ["title"], timeout: 121 })).toThrow();
+  });
+
+  it("passes render_fallback:true through", () => {
+    const p = validateExtractParams({ url: "https://example.com", fields: ["title"], render_fallback: true });
+    expect(p.render_fallback).toBe(true);
+  });
+
+  it("defaults render_fallback to false", () => {
+    const p = validateExtractParams({ url: "https://example.com", fields: ["title"] });
+    expect(p.render_fallback).toBe(false);
+  });
+});
+
+// ─── Map validator ──────────────────────────────────────
+
+describe("validateMapParams", () => {
+  it("accepts valid url with defaults", () => {
+    const p = validateMapParams({ url: "https://example.com" });
+    expect(p.url).toBe("https://example.com");
+    expect(p.limit).toBe(50);
+    expect(p.include_external).toBe(false);
+    expect(p.timeout).toBe(60);
+  });
+
+  it("rejects missing url", () => {
+    expect(() => validateMapParams({})).toThrow("url is required");
+  });
+
+  it("rejects non-http url", () => {
+    expect(() => validateMapParams({ url: "ftp://bad.com" })).toThrow("http://");
+  });
+
+  it("rejects limit below 10", () => {
+    expect(() => validateMapParams({ url: "https://example.com", limit: 5 })).toThrow("between 10 and 200");
+  });
+
+  it("rejects limit above 200", () => {
+    expect(() => validateMapParams({ url: "https://example.com", limit: 201 })).toThrow("between 10 and 200");
+  });
+
+  it("rejects NaN limit", () => {
+    expect(() => validateMapParams({ url: "https://example.com", limit: "abc" })).toThrow("between 10 and 200");
+  });
+
+  it("rejects country with hyphens", () => {
+    expect(() => validateMapParams({ url: "https://example.com", country: "us-bad" })).toThrow();
+  });
+
+  it("rejects timeout out of range", () => {
+    expect(() => validateMapParams({ url: "https://example.com", timeout: 0 })).toThrow();
+    expect(() => validateMapParams({ url: "https://example.com", timeout: 121 })).toThrow();
+  });
+
+  it("passes include_external:true through", () => {
+    const p = validateMapParams({ url: "https://example.com", include_external: true });
+    expect(p.include_external).toBe(true);
+  });
+
+  it("defaults include_external to false", () => {
+    const p = validateMapParams({ url: "https://example.com" });
+    expect(p.include_external).toBe(false);
   });
 });

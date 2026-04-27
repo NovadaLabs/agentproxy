@@ -1,5 +1,6 @@
 import axios from "axios";
 import { NOVADA_SEARCH_URL, DEFAULT_USER_AGENT } from "../config.js";
+import { QUOTA_NOTE } from "../validation.js";
 const SAFE_LOCALE = /^[a-zA-Z0-9_-]{1,10}$/;
 export async function agentproxySearch(params, novadaApiKey) {
     const { query, engine = "google", num = 10, country = "", language = "" } = params;
@@ -38,7 +39,8 @@ export async function agentproxySearch(params, novadaApiKey) {
     catch (err) {
         // Sanitize: never surface the request URL (contains api_key) in error messages
         // Sanitize api_key from all error paths — it's embedded in the request URL
-        const sanitize = (s) => s.replaceAll(novadaApiKey, "***");
+        const sanitize = (s) => s.replaceAll(novadaApiKey, "***")
+            .replaceAll(encodeURIComponent(novadaApiKey), "***");
         if (axios.isAxiosError(err)) {
             const status = err.response?.status;
             const msg = sanitize(String(err.response?.data?.msg || err.message));
@@ -68,7 +70,7 @@ export async function agentproxySearch(params, novadaApiKey) {
         },
         meta: {
             latency_ms,
-            quota: { credits_estimated: 1, note: "Check dashboard.novada.com for real-time balance" },
+            quota: { credits_estimated: 1, note: QUOTA_NOTE },
         },
     };
     return JSON.stringify(result);

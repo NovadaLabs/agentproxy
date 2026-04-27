@@ -1,20 +1,53 @@
-# Proxy4Agents MCP
+<h1 align="center">Proxy4Agents MCP</h1>
 
-**Residential proxy MCP server for AI agents.** Route any HTTP request through 2M+ real home devices — Android phones, Windows PCs, Macs — to bypass anti-bot systems, geo-target by country or city, and maintain sticky sessions across multi-step workflows.
+<p align="center"><strong>The agent-first residential proxy MCP — works with any provider.</strong></p>
 
-[![npm version](https://img.shields.io/npm/v/bestproxy4agents-mcp?label=npm&color=CB3837)](https://npmjs.com/package/bestproxy4agents-mcp)
-[![npm downloads](https://img.shields.io/npm/dw/bestproxy4agents-mcp?label=downloads&color=blue)](https://npmjs.com/package/bestproxy4agents-mcp)
-[![License: MIT](https://img.shields.io/badge/license-MIT-green)](LICENSE)
-[![Node.js](https://img.shields.io/badge/node-%3E%3D18-brightgreen)](https://nodejs.org)
-[![CI](https://github.com/NovadaLabs/proxy4agent/actions/workflows/ci.yml/badge.svg)](https://github.com/NovadaLabs/proxy4agent/actions)
-[![Smithery](https://smithery.ai/badge/proxy4agent)](https://smithery.ai/server/proxy4agent)
-[![8 tools](https://img.shields.io/badge/tools-8-orange)](https://github.com/NovadaLabs/proxy4agent#tools)
-[![MCP Badge](https://lobehub.com/badge/mcp/novadalabs-proxy4agent)](https://lobehub.com/mcp/novadalabs-proxy4agent)
-[![English](https://img.shields.io/badge/lang-English-blue?style=flat-square)](#proxy4agents-mcp)
-[![中文文档](https://img.shields.io/badge/lang-中文文档-red?style=flat-square)](#proxy4agents-mcp中文文档)
+<p align="center">
+Route any HTTP request through 2M+ real home devices — Android phones, Windows PCs, Macs — to bypass anti-bot systems, geo-target by country or city, and maintain sticky sessions across multi-step workflows. Powered by <a href="https://www.novada.com">Novada</a>.
+</p>
 
-Works with **Claude Code**, **Cursor**, **Windsurf**, **Cline**, **Continue**, and any MCP-compatible AI agent. Powered by **[Novada](https://www.novada.com)**.
+<p align="center">
+  <a href="https://npmjs.com/package/bestproxy4agents-mcp"><img src="https://img.shields.io/npm/v/bestproxy4agents-mcp?label=npm&color=CB3837&style=flat-square" alt="npm version"></a>
+  <a href="https://npmjs.com/package/bestproxy4agents-mcp"><img src="https://img.shields.io/npm/dw/bestproxy4agents-mcp?label=downloads&color=blue&style=flat-square" alt="npm downloads"></a>
+  <a href="LICENSE"><img src="https://img.shields.io/badge/license-MIT-green?style=flat-square" alt="License: MIT"></a>
+  <a href="https://github.com/NovadaLabs/proxy4agent/actions"><img src="https://github.com/NovadaLabs/proxy4agent/actions/workflows/ci.yml/badge.svg" alt="CI"></a>
+  <a href="https://nodejs.org"><img src="https://img.shields.io/badge/node-%3E%3D18-brightgreen?style=flat-square" alt="Node.js"></a>
+</p>
 
+<p align="center">
+  <img src="https://img.shields.io/badge/tools-8-orange?style=flat-square" alt="8 tools">
+  <img src="https://img.shields.io/badge/prompts-5-blue?style=flat-square" alt="5 prompts">
+  <img src="https://img.shields.io/badge/resources-5-green?style=flat-square" alt="5 resources">
+  <img src="https://img.shields.io/badge/tests-241-brightgreen?style=flat-square" alt="241 tests">
+  <img src="https://img.shields.io/badge/providers-5-purple?style=flat-square" alt="5 providers">
+</p>
+
+<p align="center">
+  <a href="https://lobehub.com/mcp/novadalabs-proxy4agent"><img src="https://lobehub.com/badge/mcp/novadalabs-proxy4agent" alt="LobeHub"></a>
+  <a href="https://smithery.ai/server/proxy4agent"><img src="https://smithery.ai/badge/proxy4agent" alt="Smithery"></a>
+  <a href="https://mcp.run"><img src="https://img.shields.io/badge/MCP-Registry-blueviolet?style=flat-square" alt="MCP Registry"></a>
+</p>
+
+<p align="center">
+  <a href="#proxy4agents-mcp"><img src="https://img.shields.io/badge/lang-English-blue?style=flat-square" alt="English"></a>
+  <a href="#proxy4agents-mcp中文文档"><img src="https://img.shields.io/badge/lang-中文文档-red?style=flat-square" alt="中文文档"></a>
+</p>
+
+<p align="center">
+  <a href="#why-proxy4agents-mcp">Why</a> &middot;
+  <a href="#quick-install">Install</a> &middot;
+  <a href="#8-tools-at-a-glance">Tools</a> &middot;
+  <a href="#5-prompts">Prompts</a> &middot;
+  <a href="#5-resources">Resources</a> &middot;
+  <a href="#providers">Providers</a> &middot;
+  <a href="#agent-first-design">Agent-First</a>
+</p>
+
+---
+
+Works with **Claude Code**, **Cursor**, **Windsurf**, **Cline**, **Continue**, and any MCP-compatible AI agent.
+
+> [!TIP]
 > **Free tier available** — sign up at [novada.com](https://www.novada.com), no credit card required. Get free access to Scraper API, Web Unblocker, and residential proxies to start building immediately.
 
 ---
@@ -43,10 +76,10 @@ AI agents get blocked on 60–70% of commercial websites. Standard HTTP requests
 |------|-------------|---------|
 | `agentproxy_fetch` | Fetch any URL through residential proxy | Proxy credentials |
 | `agentproxy_batch_fetch` | Fetch 2–20 URLs concurrently (up to 5x parallel) | Proxy credentials |
-| `agentproxy_extract` | Extract structured fields (title, price, rating…) from any URL | Proxy credentials |
+| `agentproxy_extract` | Extract structured fields (title, price, rating...) from any URL | Proxy credentials |
 | `agentproxy_map` | Crawl a URL and return all internal links as JSON array | Proxy credentials |
 | `agentproxy_session` | Sticky session — same IP across every call | Proxy credentials |
-| `agentproxy_search` | Google search → structured JSON (title, url, snippet) | `NOVADA_API_KEY` |
+| `agentproxy_search` | Google search -> structured JSON (title, url, snippet) | `NOVADA_API_KEY` |
 | `agentproxy_render` | Render JS-heavy pages with real Chromium [BETA] | `NOVADA_BROWSER_WS` |
 | `agentproxy_status` | Check proxy network health + version | _(none)_ |
 
@@ -70,6 +103,37 @@ Goal: "Login + multi-page flow" → agentproxy_session (same session_id)
 
 Goal: "Check if proxy works"    → agentproxy_status
 ```
+
+---
+
+## 5 Prompts
+
+Pre-built agent workflows that chain multiple tools together. Call these from any MCP client to execute common patterns in one step.
+
+| Prompt | Description | Key Arguments |
+|--------|-------------|---------------|
+| `fetch_url` | Fetch a URL through residential proxy with anti-bot bypass | `url`, `country`, `format` |
+| `research_topic` | Search + batch read workflow — find and read top pages on a topic | `query`, `num_results`, `country` |
+| `extract_product` | Extract structured product data from any e-commerce URL | `url`, `fields` |
+| `crawl_site` | Discover all pages on a site, then fetch them in parallel | `url`, `limit`, `country` |
+| `troubleshoot` | Step-by-step proxy diagnosis when things go wrong | `error_message` |
+
+> [!NOTE]
+> Prompts orchestrate multi-tool workflows automatically. For example, `research_topic` runs `agentproxy_search` then `agentproxy_batch_fetch` in sequence — the agent doesn't need to figure out the pipeline.
+
+---
+
+## 5 Resources
+
+Always-accessible reference data that agents can read at any time, without making proxy calls.
+
+| Resource URI | Description |
+|-------------|-------------|
+| `proxy://countries` | Complete list of 195+ country codes with city-level targeting |
+| `proxy://error-codes` | All typed error codes with recovery instructions |
+| `proxy://workflows` | Common agent workflow patterns (crawl, research, monitoring) |
+| `proxy://supported-fields` | All fields `agentproxy_extract` can extract with strategies |
+| `proxy://cost-guide` | Credits per tool, caching behavior, cost optimization tips |
 
 ---
 
@@ -116,7 +180,7 @@ claude mcp add bestproxy4agents-mcp \
 }
 ```
 
-Get credentials: **[novada.com](https://www.novada.com)** → Dashboard → Residential Proxies → Endpoint Generator
+Get credentials: **[novada.com](https://www.novada.com)** -> Dashboard -> Residential Proxies -> Endpoint Generator
 
 ---
 
@@ -124,7 +188,7 @@ Get credentials: **[novada.com](https://www.novada.com)** → Dashboard → Resi
 
 Proxy4Agents MCP works with **any HTTP proxy provider**. Novada is the built-in default with the deepest integration.
 
-**Priority:** Novada → BrightData → Smartproxy → Oxylabs → Generic. First configured provider wins.
+**Priority:** Novada -> BrightData -> Smartproxy -> Oxylabs -> Generic. First configured provider wins.
 
 | Feature | Novada | BrightData | Smartproxy | Oxylabs | Generic HTTP |
 |---------|--------|------------|------------|---------|-------------|
@@ -183,6 +247,23 @@ claude mcp add bestproxy4agents-mcp \
 
 ---
 
+## Agent-First Design
+
+> [!NOTE]
+> Proxy4Agents is the only proxy MCP designed specifically for autonomous AI agents. Every response, error, and description is optimized for machine consumption.
+
+| Feature | What It Means |
+|---------|--------------|
+| `agent_instruction` in errors | Every error tells the agent exactly what to do next |
+| Decision trees in descriptions | WHEN TO USE / USE INSTEAD guides in every tool |
+| `cache_hit` metadata | Agent knows when 0 credits were used (cached response) |
+| `credits_estimated` per call | Cost tracking built into every response |
+| Typed error codes | Machine-readable: `BOT_DETECTION_SUSPECTED`, `PAGE_NOT_FOUND`, etc. |
+| 5 workflow prompts | Pre-built agent workflows: research, crawl, extract, diagnose |
+| 5 reference resources | Countries, error codes, cost guide — always accessible |
+
+---
+
 ## Tools
 
 ### `agentproxy_fetch`
@@ -191,10 +272,10 @@ Fetch any URL through a residential proxy. Returns structured JSON with content,
 | Parameter | Type | Default | Description |
 |-----------|------|---------|-------------|
 | `url` | string | required | Target URL (`http://` or `https://`) |
-| `country` | string | — | 2-letter ISO code: `US`, `DE`, `JP`, `GB`, `BR`… (195+ options) |
-| `city` | string | — | City: `newyork`, `london`, `tokyo`, `paris`, `berlin`… |
+| `country` | string | — | 2-letter ISO code: `US`, `DE`, `JP`, `GB`, `BR`... (195+ options) |
+| `city` | string | — | City: `newyork`, `london`, `tokyo`, `paris`, `berlin`... |
 | `session_id` | string | — | Reuse same ID for same IP across calls (no hyphens, max 64 chars) |
-| `format` | string | `markdown` | `markdown` strips HTML · `raw` returns full HTML |
+| `format` | string | `markdown` | `markdown` strips HTML / `raw` returns full HTML |
 | `timeout` | number | `60` | Timeout in seconds (1–120) |
 
 **Response:**
@@ -247,7 +328,7 @@ Extract structured fields from any URL using heuristic pattern matching (meta ta
 | Parameter | Type | Default | Description |
 |-----------|------|---------|-------------|
 | `url` | string | required | Target URL |
-| `fields` | string[] | required | Fields to extract: `title`, `price`, `description`, `rating`, `image`, `author`, `date`… |
+| `fields` | string[] | required | Fields to extract: `title`, `price`, `description`, `rating`, `image`, `author`, `date`... |
 | `render_fallback` | boolean | `false` | Auto-retry via `agentproxy_render` on TLS/bot block |
 | `country` | string | — | Geo-target the fetch |
 | `timeout` | number | `60` | Timeout in seconds |
@@ -318,20 +399,20 @@ Structured Google search via Novada Scraper API. Returns titles, URLs, and snipp
 |-----------|------|---------|-------------|
 | `query` | string | required | Search query |
 | `num` | number | `10` | Results (1–20) |
-| `country` | string | — | Localize: `us`, `uk`, `de`, `jp`… |
-| `language` | string | — | Language: `en`, `zh`, `de`, `ja`… |
+| `country` | string | — | Localize: `us`, `uk`, `de`, `jp`... |
+| `language` | string | — | Language: `en`, `zh`, `de`, `ja`... |
 
 ---
 
 ### `agentproxy_render` [BETA]
 Render JavaScript-heavy pages using Novada's Browser API (real Chromium, full JS execution). Use for SPAs, React/Vue apps, and pages that return blank with a standard HTTP fetch.
 
-**Requires:** `NOVADA_BROWSER_WS` — copy the Puppeteer URL from Dashboard → Browser API → Playground
+**Requires:** `NOVADA_BROWSER_WS` — copy the Puppeteer URL from Dashboard -> Browser API -> Playground
 
 | Parameter | Type | Default | Description |
 |-----------|------|---------|-------------|
 | `url` | string | required | Target URL |
-| `format` | string | `markdown` | `markdown` · `html` · `text` |
+| `format` | string | `markdown` | `markdown` / `html` / `text` |
 | `wait_for` | string | — | CSS selector to wait for before extracting (e.g. `.product-title`) |
 | `timeout` | number | `60` | Timeout in seconds (5–120) |
 
@@ -346,7 +427,7 @@ Check proxy network connectivity and version. Makes a live proxy call to verify 
 
 ## Agent Workflows
 
-### Site crawl pipeline (map → batch)
+### Site crawl pipeline (map -> batch)
 ```
 # Agent task: "Read all products on this catalogue"
 1. agentproxy_map(url="https://books.toscrape.com", limit=50)
@@ -357,7 +438,7 @@ Check proxy network connectivity and version. Makes a live proxy call to verify 
    (vs ~60s sequential = 15x speedup)
 ```
 
-### Research pipeline (search → batch)
+### Research pipeline (search -> batch)
 ```
 # Agent task: "Find and read top 5 pages about X"
 1. agentproxy_search(query="residential proxy MCP", num=5)
@@ -404,7 +485,7 @@ All `agentproxy_fetch` and `agentproxy_batch_fetch` calls are cached in-process.
 |----------|--------|
 | Default TTL | 300 seconds (5 minutes) |
 | Cache key | `url + format + country` |
-| Session bypass | `session_id` present → never cached (sticky routing requires live calls) |
+| Session bypass | `session_id` present -> never cached (sticky routing requires live calls) |
 | Disable | Set `PROXY4AGENT_CACHE_TTL_SECONDS=0` |
 | Max entries | 200 (oldest evicted when full) |
 
@@ -465,12 +546,12 @@ Every error response includes a typed `error.code`, `recoverable` flag, and `age
 | Client | Install method |
 |--------|---------------|
 | **Claude Code** | `claude mcp add bestproxy4agents-mcp -e ... -- npx -y bestproxy4agents-mcp` |
-| **Cursor** | Settings → MCP → Add server → `npx -y bestproxy4agents-mcp` |
-| **Windsurf** | MCP config → `npx -y bestproxy4agents-mcp` |
-| **Cline** | MCP settings → command: `npx`, args: `["-y", "bestproxy4agents-mcp"]` |
-| **Continue** | `.continue/config.json` → mcpServers |
+| **Cursor** | Settings -> MCP -> Add server -> `npx -y bestproxy4agents-mcp` |
+| **Windsurf** | MCP config -> `npx -y bestproxy4agents-mcp` |
+| **Cline** | MCP settings -> command: `npx`, args: `["-y", "bestproxy4agents-mcp"]` |
+| **Continue** | `.continue/config.json` -> mcpServers |
 | **Smithery** | [smithery.ai/server/proxy4agent](https://smithery.ai/server/proxy4agent) |
-| **Any MCP client** | stdio transport · `npx -y bestproxy4agents-mcp` |
+| **Any MCP client** | stdio transport / `npx -y bestproxy4agents-mcp` |
 
 ---
 
@@ -498,7 +579,7 @@ Every error response includes a typed `error.code`, `recoverable` flag, and `age
 
 ## Known Limitations
 
-- Sites requiring full JS execution → use `agentproxy_render`
+- Sites requiring full JS execution -> use `agentproxy_render`
 - `agentproxy_render` requires `NOVADA_BROWSER_WS` (separate Novada Browser API subscription)
 - Session IDs must not contain hyphens (Novada uses `-` as its auth delimiter)
 - Sticky sessions are best-effort infrastructure — use `verify_sticky: true` to confirm before relying on them
@@ -524,14 +605,35 @@ MIT © [Novada](https://www.novada.com) — see [LICENSE](LICENSE)
 
 # Proxy4Agents MCP（中文文档）
 
-**AI 智能体的住宅代理 MCP 服务器。** 通过 200 万+ 真实家庭设备（Android 手机、Windows 电脑、Mac）路由 HTTP 请求，绕过反机器人系统，按国家/城市精准定位，跨请求保持同一 IP。
+<p align="center"><strong>AI 智能体专属住宅代理 MCP — 支持任意供应商。</strong></p>
 
-[![返回英文](https://img.shields.io/badge/lang-English-blue?style=flat-square)](#proxy4agents-mcp)
-[![8 个工具](https://img.shields.io/badge/工具-8个-orange)](https://github.com/NovadaLabs/proxy4agent#8-tools-at-a-glance)
-[![195+ 国家](https://img.shields.io/badge/国家-195%2B-brightgreen)](https://www.novada.com)
-[![响应缓存](https://img.shields.io/badge/缓存-300s_TTL-purple)](https://github.com/NovadaLabs/proxy4agent#response-cache)
+<p align="center">
+通过 200 万+ 真实家庭设备（Android 手机、Windows 电脑、Mac）路由 HTTP 请求，绕过反机器人系统，按国家/城市精准定位，跨请求保持同一 IP。
+</p>
+
+<p align="center">
+  <a href="#proxy4agents-mcp"><img src="https://img.shields.io/badge/lang-English-blue?style=flat-square" alt="返回英文"></a>
+  <img src="https://img.shields.io/badge/工具-8个-orange?style=flat-square" alt="8 个工具">
+  <img src="https://img.shields.io/badge/提示词-5个-blue?style=flat-square" alt="5 个提示词">
+  <img src="https://img.shields.io/badge/资源-5个-green?style=flat-square" alt="5 个资源">
+  <img src="https://img.shields.io/badge/测试-241个-brightgreen?style=flat-square" alt="241 个测试">
+</p>
+
+<p align="center">
+  <a href="#8-个工具">工具</a> &middot;
+  <a href="#5-个提示词">提示词</a> &middot;
+  <a href="#5-个资源">资源</a> &middot;
+  <a href="#快速安装">安装</a> &middot;
+  <a href="#智能体优先设计">智能体优先</a> &middot;
+  <a href="#多供应商支持">供应商</a>
+</p>
+
+---
 
 支持 **Claude Code**、**Cursor**、**Windsurf**、**Cline**、**Continue** 及所有 MCP 兼容智能体。由 **[Novada](https://www.novada.com)** 提供支持。
+
+> [!TIP]
+> **免费套餐** — 在 [novada.com](https://www.novada.com) 注册，无需信用卡。免费使用 Scraper API、Web Unblocker 和住宅代理。
 
 ---
 
@@ -547,6 +649,34 @@ agentproxy_search      → Google 搜索，返回结构化 JSON（无需解析 H
 agentproxy_render      → 真实 Chromium 渲染 JS 页面 [BETA]
 agentproxy_status      → 检查代理网络健康状态
 ```
+
+---
+
+## 5 个提示词
+
+预构建的智能体工作流，将多个工具链式组合。
+
+| 提示词 | 描述 | 主要参数 |
+|--------|------|---------|
+| `fetch_url` | 通过住宅代理抓取 URL，自动绕过反机器人 | `url`, `country`, `format` |
+| `research_topic` | 搜索 + 批量阅读工作流 — 搜索主题并阅读排名靠前的页面 | `query`, `num_results`, `country` |
+| `extract_product` | 从任意电商 URL 提取结构化产品数据 | `url`, `fields` |
+| `crawl_site` | 发现站点所有页面，然后并行抓取 | `url`, `limit`, `country` |
+| `troubleshoot` | 代理故障逐步诊断 | `error_message` |
+
+---
+
+## 5 个资源
+
+智能体可随时读取的参考数据，无需消耗代理额度。
+
+| 资源 URI | 描述 |
+|----------|------|
+| `proxy://countries` | 195+ 国家代码完整列表，含城市级定位 |
+| `proxy://error-codes` | 所有类型化错误码及恢复指令 |
+| `proxy://workflows` | 常用智能体工作流模式（爬取、研究、监控） |
+| `proxy://supported-fields` | `agentproxy_extract` 支持的所有提取字段及策略 |
+| `proxy://cost-guide` | 每个工具的额度消耗、缓存行为、成本优化技巧 |
 
 ---
 
@@ -616,6 +746,23 @@ agentproxy_session(session_id, url="/data/2")    → 同一 IP
 
 ---
 
+## 智能体优先设计
+
+> [!NOTE]
+> Proxy4Agents 是唯一专为自主 AI 智能体设计的代理 MCP。每个响应、错误和描述都为机器消费而优化。
+
+| 特性 | 含义 |
+|------|------|
+| 错误中的 `agent_instruction` | 每个错误都告诉智能体下一步该做什么 |
+| 描述中的决策树 | 每个工具都有 WHEN TO USE / USE INSTEAD 指引 |
+| `cache_hit` 元数据 | 智能体知道是否消耗了 0 额度（缓存命中） |
+| `credits_estimated` | 每个响应都内置成本追踪 |
+| 类型化错误码 | 机器可读：`BOT_DETECTION_SUSPECTED`、`PAGE_NOT_FOUND` 等 |
+| 5 个工作流提示词 | 预构建工作流：研究、爬取、提取、诊断 |
+| 5 个参考资源 | 国家、错误码、成本指南 — 随时可访问 |
+
+---
+
 ## 核心特性
 
 ### 1. 住宅 IP 网络
@@ -624,8 +771,8 @@ agentproxy_session(session_id, url="/data/2")    → 同一 IP
 - 真实家庭 IP 指纹，绕过 Cloudflare、Akamai、DataDome 检测
 
 ### 2. 地理定向
-- **195+ 国家**，两字母 ISO 代码（`US`、`DE`、`JP`、`BR`…）
-- **城市级定位**：`newyork`、`london`、`tokyo`、`singapore`…
+- **195+ 国家**，两字母 ISO 代码（`US`、`DE`、`JP`、`BR`...）
+- **城市级定位**：`newyork`、`london`、`tokyo`、`singapore`...
 - 同一 URL 不同国家 = 独立缓存键，互不干扰
 
 ### 3. 响应缓存
@@ -752,7 +899,7 @@ claude mcp add bestproxy4agents-mcp \
   -- npx -y bestproxy4agents-mcp
 ```
 
-获取凭证：**[novada.com](https://www.novada.com)** → 仪表盘 → 住宅代理 → 端点生成器
+获取凭证：**[novada.com](https://www.novada.com)** -> 仪表盘 -> 住宅代理 -> 端点生成器
 
 **Cursor / Windsurf / Cline** 配置：
 ```json
@@ -778,8 +925,8 @@ claude mcp add bestproxy4agents-mcp \
 | 参数 | 类型 | 默认 | 说明 |
 |------|------|------|------|
 | `url` | string | 必填 | 目标 URL |
-| `country` | string | — | 国家代码（`US`、`DE`、`JP`…） |
-| `city` | string | — | 城市（`newyork`、`london`…） |
+| `country` | string | — | 国家代码（`US`、`DE`、`JP`...） |
+| `city` | string | — | 城市（`newyork`、`london`...） |
 | `session_id` | string | — | 复用同一 IP（不含连字符，最多 64 字符） |
 | `format` | string | `markdown` | `markdown`（去 HTML）或 `raw`（原始 HTML） |
 | `timeout` | number | `60` | 超时秒数（1-120） |
@@ -796,7 +943,7 @@ claude mcp add bestproxy4agents-mcp \
 | 参数 | 类型 | 默认 | 说明 |
 |------|------|------|------|
 | `url` | string | 必填 | 目标 URL |
-| `fields` | string[] | 必填 | 要提取的字段（`title`、`price`、`description`、`rating`…） |
+| `fields` | string[] | 必填 | 要提取的字段（`title`、`price`、`description`、`rating`...） |
 | `render_fallback` | boolean | `false` | 代理失败时自动切换到浏览器渲染 |
 | `country` | string | — | 地理定向 |
 
@@ -820,8 +967,8 @@ claude mcp add bestproxy4agents-mcp \
 |------|------|------|------|
 | `query` | string | 必填 | 搜索关键词 |
 | `num` | number | `10` | 结果数量（1-20） |
-| `country` | string | — | 本地化结果（`us`、`de`、`jp`…） |
-| `language` | string | — | 语言（`en`、`zh`、`de`…） |
+| `country` | string | — | 本地化结果（`us`、`de`、`jp`...） |
+| `language` | string | — | 语言（`en`、`zh`、`de`...） |
 
 ### agentproxy_render [BETA]
 | 参数 | 类型 | 默认 | 说明 |

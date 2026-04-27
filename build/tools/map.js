@@ -1,5 +1,5 @@
 import { agentproxyFetch } from "./fetch.js";
-const QUOTA_NOTE = "Check dashboard.novada.com for real-time balance";
+import { SAFE_COUNTRY, QUOTA_NOTE } from "../validation.js";
 /**
  * Crawl a URL and return all internal links found on the page (and optionally
  * linked pages up to limit). This is a shallow map — it fetches the starting URL,
@@ -101,7 +101,6 @@ export async function agentproxyMap(params, adapter, credentials) {
         delete result.meta.country;
     return JSON.stringify(result);
 }
-const SAFE_COUNTRY = /^[a-zA-Z0-9_]+$/;
 export function validateMapParams(raw) {
     if (!raw.url || typeof raw.url !== "string") {
         throw new Error("url is required and must be a string");

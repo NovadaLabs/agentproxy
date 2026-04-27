@@ -1,8 +1,7 @@
 import { agentproxyFetch } from "./fetch.js";
 import type { ProxyAdapter, ProxyCredentials } from "../adapters/index.js";
 import type { ProxySuccessResponse } from "../types.js";
-
-const QUOTA_NOTE = "Check dashboard.novada.com for real-time balance";
+import { SAFE_COUNTRY, QUOTA_NOTE } from "../validation.js";
 
 export interface MapParams {
   url: string;           // starting URL — domain root or any page
@@ -129,8 +128,6 @@ export async function agentproxyMap(
 
   return JSON.stringify(result);
 }
-
-const SAFE_COUNTRY = /^[a-zA-Z0-9_]+$/;
 
 export function validateMapParams(raw: Record<string, unknown>): MapParams {
   if (!raw.url || typeof raw.url !== "string") {

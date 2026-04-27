@@ -4,7 +4,7 @@ import { HttpProxyAgent } from "http-proxy-agent";
 import { gunzipSync, brotliDecompressSync, inflateSync } from "zlib";
 import { DEFAULT_USER_AGENT } from "../config.js";
 import { htmlToMarkdown, unicodeSafeTruncate } from "../utils.js";
-const QUOTA_NOTE = "Check dashboard.novada.com for real-time balance";
+import { SAFE_COUNTRY, SAFE_CITY, SAFE_SESSION_ID, QUOTA_NOTE } from "../validation.js";
 // ─── In-process response cache ───────────────────────────────────────────────
 // Eliminates duplicate proxy credits when agents re-fetch the same URL.
 // Keyed by (url + format + country). Session-pinned requests are NEVER cached
@@ -40,12 +40,6 @@ function evictOldest() {
 export function clearResponseCache() {
     _responseCache.clear();
 }
-// Input validation patterns — prevent proxy username injection.
-// No hyphens: Novada uses `-` as segment delimiter; other adapters have similar constraints.
-// These patterns are intentionally strict — adapters may further restrict via their own format.
-const SAFE_COUNTRY = /^[a-zA-Z0-9_]+$/;
-const SAFE_CITY = /^[a-zA-Z0-9_]+$/;
-const SAFE_SESSION_ID = /^[a-zA-Z0-9_]+$/;
 function decompress(buffer, encoding) {
     // When the server declares an encoding, trust it — throw on failure so the retry loop fires
     if (encoding === "gzip")
@@ -54,20 +48,15 @@ function decompress(buffer, encoding) {
         return brotliDecompressSync(buffer).toString("utf-8");
     if (encoding === "deflate")
         return inflateSync(buffer).toString("utf-8");
-    // No encoding header — probe common encodings as best-effort fallback
-    // (some servers send compressed data without declaring it)
-    try {
-        return gunzipSync(buffer).toString("utf-8");
+    // No encoding header — check magic bytes before probing
+    if (buffer.length >= 2 && buffer[0] === 0x1f && buffer[1] === 0x8b) {
+        try {
+            return gunzipSync(buffer).toString("utf-8");
+        }
+        catch { /* corrupted gzip */ }
     }
-    catch { /* not gzip */ }
-    try {
-        return brotliDecompressSync(buffer).toString("utf-8");
-    }
-    catch { /* not brotli */ }
-    try {
-        return inflateSync(buffer).toString("utf-8");
-    }
-    catch { /* not deflate */ }
+    // Brotli has no reliable magic bytes — skip probe
+    // Deflate starts with various bytes (0x78 0x01/9C/DA common) but not reliable — skip probe
     return buffer.toString("utf-8");
 }
 export async function agentproxyFetch(params, adapter, credentials) {
@@ -85,6 +74,9 @@ export async function agentproxyFetch(params, adapter, credentials) {
     if (cacheKey) {
         const hit = _responseCache.get(cacheKey);
         if (hit && hit.expires_at > Date.now()) {
+            // LRU: refresh position in Map so this entry isn't evicted as "oldest"
+            _responseCache.delete(cacheKey);
+            _responseCache.set(cacheKey, hit);
             const serveStart = Date.now();
             const parsed = JSON.parse(hit.payload);
             parsed.meta.cache_hit = true;
@@ -136,7 +128,9 @@ export async function agentproxyFetch(params, adapter, credentials) {
             const contentType = response.headers["content-type"];
             const body = decompress(Buffer.from(response.data), encoding);
             const isHtml = contentType?.includes("text/html") || body.toLowerCase().includes("<html");
-            const output = format === "markdown" && isHtml ? htmlToMarkdown(body) : body;
+            // Pre-truncate before expensive markdown conversion to avoid 600MB of intermediate strings
+            const bodyForConversion = body.length > 500_000 ? body.slice(0, 500_000) : body;
+            const output = format === "markdown" && isHtml ? htmlToMarkdown(bodyForConversion) : body;
             const truncated = output.length > 100_000;
             const finalOutput = truncated
                 ? unicodeSafeTruncate(output, 100_000) + "\n\n[... truncated — page is large]"

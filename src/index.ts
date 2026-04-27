@@ -49,7 +49,7 @@ let activeRenders = 0;
 
 // ─── Error Classification ─────────────────────────────────────────────────────
 
-function classifyError(err: unknown): ProxyErrorResponse {
+export function classifyError(err: unknown): ProxyErrorResponse {
   const ax = axios.isAxiosError(err);
   const status = ax ? (err as AxiosError).response?.status : undefined;
   const msg = err instanceof Error ? err.message : String(err);
@@ -59,6 +59,12 @@ function classifyError(err: unknown): ProxyErrorResponse {
     recoverable: true,
     agent_instruction: "Wait 5 seconds and retry. Consider reducing request frequency.",
     retry_after_seconds: 5
+  }};
+  if (ax && status === 404) return { ok: false, error: {
+    code: "PAGE_NOT_FOUND",
+    message: "HTTP 404 — page not found",
+    recoverable: false,
+    agent_instruction: "The page does not exist at this URL. Verify the URL is correct. Do not retry."
   }};
   if (ax && status && status >= 400 && status < 500) return { ok: false, error: {
     code: "BOT_DETECTION_SUSPECTED",
@@ -163,7 +169,7 @@ const TOOLS = [
       type: "object" as const,
       properties: {
         query:    { type: "string", description: "The search query" },
-        engine:   { type: "string", enum: ["google"], default: "google", description: "Search engine (google)" },
+        engine:   { type: "string", enum: ["google"], default: "google", description: "Search engine — currently only 'google' is supported. More engines planned." },
         num:      { type: "number", default: 10, minimum: 1, maximum: 20, description: "Number of results (1-20)" },
         country:  { type: "string", description: "Country for localized results (e.g. us, uk, de)" },
         language: { type: "string", description: "Language code (e.g. en, zh, de)" },
@@ -192,7 +198,7 @@ const TOOLS = [
   {
     name: "agentproxy_session",
     description:
-      "Fetch a URL with a sticky session — same residential IP reused across calls with the same session_id. Returns structured JSON. Use verify_sticky:true to confirm the session held.\n\nWHEN TO USE: Multi-step workflows where IP consistency matters: login flows, paginated scraping, price monitoring.\nNOTE: Sticky sessions are best-effort — infrastructure may not guarantee 100% IP consistency. Use verify_sticky:true to confirm.\nNOTE: verify_sticky:true makes 3 sequential proxy calls and adds ~15-25 seconds. Only use it when you need to confirm IP consistency before a multi-step workflow.\nON FAILURE: If SESSION_STICKINESS_FAILED → regenerate session_id or accept best-effort behavior.",
+      "Specialized wrapper around agentproxy_fetch with session verification. For basic sticky routing without verification, use agentproxy_fetch with a session_id parameter instead.\n\nFetch a URL with a sticky session — same residential IP reused across calls with the same session_id. Returns structured JSON. Use verify_sticky:true to confirm the session held.\n\nWHEN TO USE: Multi-step workflows where IP consistency matters: login flows, paginated scraping, price monitoring.\nNOTE: Sticky sessions are best-effort — infrastructure may not guarantee 100% IP consistency. Use verify_sticky:true to confirm.\nNOTE: verify_sticky:true makes 3 sequential proxy calls and adds ~15-25 seconds. Only use it when you need to confirm IP consistency before a multi-step workflow.\nON FAILURE: If SESSION_STICKINESS_FAILED → regenerate session_id or accept best-effort behavior.",
     inputSchema: {
       type: "object" as const,
       properties: {
@@ -364,14 +370,26 @@ class Proxy4AgentsServer {
         if (proxyContext) {
           for (const field of proxyContext.adapter.sensitiveFields) {
             const val = proxyContext.credentials[field];
-            if (val) message = message.replaceAll(val, "***");
+            if (val) {
+              message = message.replaceAll(val, "***");
+              message = message.replaceAll(encodeURIComponent(val), "***");
+            }
           }
           // Also redact the raw username (not in sensitiveFields but may appear in proxy error URLs)
           const user = proxyContext.credentials["user"];
-          if (user) message = message.replaceAll(user, "***");
+          if (user) {
+            message = message.replaceAll(user, "***");
+            message = message.replaceAll(encodeURIComponent(user), "***");
+          }
         }
-        if (NOVADA_API_KEY)    message = message.replaceAll(NOVADA_API_KEY, "***");
-        if (NOVADA_BROWSER_WS) message = message.replaceAll(NOVADA_BROWSER_WS, "***");
+        if (NOVADA_API_KEY) {
+          message = message.replaceAll(NOVADA_API_KEY, "***");
+          message = message.replaceAll(encodeURIComponent(NOVADA_API_KEY), "***");
+        }
+        if (NOVADA_BROWSER_WS) {
+          message = message.replaceAll(NOVADA_BROWSER_WS, "***");
+          message = message.replaceAll(encodeURIComponent(NOVADA_BROWSER_WS), "***");
+        }
         errResponse.error.message = message;
 
         return {
@@ -462,6 +480,13 @@ class Proxy4AgentsServer {
           { name: "country", description: "2-letter country code for geo-targeting", required: false },
         ],
       },
+      {
+        name: "troubleshoot",
+        description: "Diagnose proxy failures step by step. Checks connectivity, tests a simple fetch, and suggests fixes based on error codes.",
+        arguments: [
+          { name: "error_message", description: "The error message you received (optional — if provided, diagnosis starts from this error)", required: false },
+        ],
+      },
     ];
 
     this.server.setRequestHandler(ListPromptsRequestSchema, async () => ({
@@ -534,6 +559,31 @@ class Proxy4AgentsServer {
         };
       }
 
+      if (name === "troubleshoot") {
+        const errorMsg = (args.error_message as string) || "";
+        const errorContext = errorMsg ? `\nThe last error was: "${errorMsg}"\n` : "";
+        return {
+          description: "Diagnose proxy issues",
+          messages: [{
+            role: "user" as const,
+            content: {
+              type: "text" as const,
+              text: `Diagnose why proxy calls are failing using these steps:${errorContext}
+1. Call agentproxy_status to check connectivity and provider health
+2. If status is HEALTHY, try agentproxy_fetch with url="https://httpbin.org/ip" to verify a simple fetch works
+3. If fetch fails, check the error code:
+   - TIMEOUT → increase timeout parameter or try a different country
+   - TLS_ERROR → try agentproxy_render instead, or a different country
+   - BOT_DETECTION_SUSPECTED → use agentproxy_render for this site
+   - PAGE_NOT_FOUND → verify the URL is correct
+   - RATE_LIMITED → wait 5 seconds and retry
+   - PROVIDER_NOT_CONFIGURED → credentials are missing, check env vars
+4. Report: what worked, what failed, and recommended next action.`,
+            },
+          }],
+        };
+      }
+
       throw new Error(`Prompt not found: ${name}`);
     });
   }
@@ -558,6 +608,18 @@ class Proxy4AgentsServer {
         uri: "proxy://workflows",
         name: "Workflow Templates",
         description: "Common agent workflow patterns: site crawl, research pipeline, price monitoring, sticky session scraping.",
+        mimeType: "text/plain",
+      },
+      {
+        uri: "proxy://supported-fields",
+        name: "Supported Extract Fields",
+        description: "All field names that agentproxy_extract can extract, with aliases and extraction strategies.",
+        mimeType: "application/json",
+      },
+      {
+        uri: "proxy://cost-guide",
+        name: "Credit Cost Guide",
+        description: "Credits consumed per tool, caching behavior, and cost optimization tips.",
         mimeType: "text/plain",
       },
     ];
@@ -599,7 +661,8 @@ class Proxy4AgentsServer {
       if (uri === "proxy://error-codes") {
         const errorCodes = {
           error_codes: [
-            { code: "BOT_DETECTION_SUSPECTED", recoverable: true, http_status: "4xx", action: "Retry with agentproxy_render or different country parameter" },
+            { code: "BOT_DETECTION_SUSPECTED", recoverable: true, http_status: "4xx (except 404, 429)", action: "Retry with agentproxy_render or different country parameter" },
+            { code: "PAGE_NOT_FOUND", recoverable: false, http_status: "404", action: "Verify the URL is correct. Do not retry." },
             { code: "TLS_ERROR", recoverable: true, cause: "TLS/SSL handshake failed through proxy", action: "Retry with different country parameter" },
             { code: "TIMEOUT", recoverable: true, cause: "Request exceeded timeout limit", action: "Increase timeout parameter (max 120s) or retry" },
             { code: "RATE_LIMITED", recoverable: true, http_status: "429", action: "Wait 5 seconds and retry. Reduce request frequency." },
@@ -678,6 +741,65 @@ class Proxy4AgentsServer {
               "  cache_hit=false → live proxy fetch, 1 credit used",
               "  TTL: 300s default. Disable: PROXY4AGENT_CACHE_TTL_SECONDS=0",
               "  Sessions with session_id are never cached.",
+            ].join("\n"),
+          }],
+        };
+      }
+
+      if (uri === "proxy://supported-fields") {
+        const fields = {
+          supported_fields: [
+            { field: "title", aliases: ["name", "product_name"], strategy: "og:title → JSON-LD name → <title> → <h1>" },
+            { field: "price", aliases: ["cost"], strategy: "JSON-LD price/lowPrice → product:price:amount meta → HTML price class regex" },
+            { field: "currency", aliases: [], strategy: "JSON-LD priceCurrency → product:price:currency meta" },
+            { field: "description", aliases: ["summary"], strategy: "og:description → description meta → JSON-LD description" },
+            { field: "image", aliases: ["thumbnail", "photo"], strategy: "og:image → JSON-LD image" },
+            { field: "rating", aliases: ["score"], strategy: "JSON-LD ratingValue" },
+            { field: "review_count", aliases: ["reviews", "rating_count"], strategy: "JSON-LD reviewCount/ratingCount" },
+            { field: "author", aliases: ["creator"], strategy: "JSON-LD author → author meta → article:author meta" },
+            { field: "date", aliases: ["published", "publish_date"], strategy: "JSON-LD datePublished → article:published_time → date meta" },
+            { field: "url", aliases: ["canonical"], strategy: "og:url → <link rel='canonical'>" },
+            { field: "links", aliases: ["urls"], strategy: "All <a href> with absolute http URLs (max 50)" },
+            { field: "headings", aliases: ["h1"], strategy: "All <h1> tag contents" },
+            { field: "h2", aliases: [], strategy: "All <h2> tag contents" },
+          ],
+          note: "For any field name not listed above, agentproxy_extract tries JSON-LD then meta tags as a generic fallback. For complex extraction needs, use agentproxy_fetch(format='raw') and parse the HTML yourself.",
+        };
+        return {
+          contents: [{
+            uri,
+            mimeType: "application/json",
+            text: JSON.stringify(fields, null, 2),
+          }],
+        };
+      }
+
+      if (uri === "proxy://cost-guide") {
+        return {
+          contents: [{
+            uri,
+            mimeType: "text/plain",
+            text: [
+              "=== Proxy4Agents MCP — Credit Cost Guide ===",
+              "",
+              "Credits per tool call:",
+              "  agentproxy_fetch     → 1 credit (0 if cache_hit=true)",
+              "  agentproxy_batch_fetch → 1 per URL (minus cache hits)",
+              "  agentproxy_extract   → 1 credit (5 if render_fallback triggered)",
+              "  agentproxy_map       → 1 credit",
+              "  agentproxy_session   → 1 credit (3 if verify_sticky=true)",
+              "  agentproxy_search    → 1 credit",
+              "  agentproxy_render    → 5 credits (Browser API metered separately)",
+              "  agentproxy_status    → 1 credit (makes a live proxy call)",
+              "",
+              "Cost optimization tips:",
+              "  1. Use agentproxy_fetch before agentproxy_render — fetch is 5x cheaper",
+              "  2. Repeated calls to the same URL are cached (meta.cache_hit=true = 0 credits)",
+              "  3. Cache TTL is 300s by default. Set PROXY4AGENT_CACHE_TTL_SECONDS to adjust.",
+              "  4. session_id requests bypass cache (sticky routing requires live calls)",
+              "  5. Use agentproxy_extract with render_fallback:true only when needed (auto-escalation costs 5 credits)",
+              "  6. batch_fetch with concurrency=3 is the sweet spot for speed vs. cost",
+              "  7. Check meta.quota.credits_estimated on every response for actual cost",
             ].join("\n"),
           }],
         };
@@ -765,6 +887,30 @@ Tools:
 
 const server = new Proxy4AgentsServer();
 server.run().catch((error) => {
-  console.error("Fatal error:", error);
+  let msg = error instanceof Error ? error.message : String(error);
+  // Redact any credentials that might appear in startup errors
+  if (NOVADA_API_KEY) {
+    msg = msg.replaceAll(NOVADA_API_KEY, "***");
+    msg = msg.replaceAll(encodeURIComponent(NOVADA_API_KEY), "***");
+  }
+  if (NOVADA_BROWSER_WS) {
+    msg = msg.replaceAll(NOVADA_BROWSER_WS, "***");
+    msg = msg.replaceAll(encodeURIComponent(NOVADA_BROWSER_WS), "***");
+  }
+  if (proxyContext) {
+    for (const field of proxyContext.adapter.sensitiveFields) {
+      const val = proxyContext.credentials[field];
+      if (val) {
+        msg = msg.replaceAll(val, "***");
+        msg = msg.replaceAll(encodeURIComponent(val), "***");
+      }
+    }
+    const user = proxyContext.credentials["user"];
+    if (user) {
+      msg = msg.replaceAll(user, "***");
+      msg = msg.replaceAll(encodeURIComponent(user), "***");
+    }
+  }
+  console.error("Fatal error:", msg);
   process.exit(1);
 });

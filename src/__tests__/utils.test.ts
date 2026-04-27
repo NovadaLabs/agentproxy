@@ -12,8 +12,21 @@ describe("unicodeSafeTruncate", () => {
 
   it("handles emoji (multi-byte) correctly", () => {
     const emoji = "Hello 🌍🌎🌏";
-    const truncated = unicodeSafeTruncate(emoji, 8);
-    expect(truncated).toBe("Hello 🌍🌎");
+    // Each emoji = 2 UTF-16 code units (surrogate pair). maxChars=8 lands
+    // on the low surrogate of 🌍 → backs up by 2, dropping the whole pair
+    expect(unicodeSafeTruncate(emoji, 8)).toBe("Hello ");
+    // maxChars=6 lands on ASCII space → no surrogate issue
+    expect(unicodeSafeTruncate(emoji, 6)).toBe("Hello ");
+    // maxChars=7 lands on high surrogate of 🌍 → backs up by 1
+    expect(unicodeSafeTruncate(emoji, 7)).toBe("Hello ");
+  });
+
+  it("does not split surrogate pair when boundary is on low surrogate", () => {
+    // "AB🌍" = [A, B, 0xD83C, 0xDF0D] — 4 code units
+    // maxChars=3 → index 2 is high surrogate → end-- → "AB"
+    expect(unicodeSafeTruncate("AB🌍", 3)).toBe("AB");
+    // maxChars=4 → full string fits (length === maxChars)
+    expect(unicodeSafeTruncate("AB🌍", 4)).toBe("AB🌍");
   });
 });
 
@@ -55,6 +68,13 @@ describe("htmlToMarkdown", () => {
   it("collapses excessive newlines", () => {
     const md = htmlToMarkdown("<p>A</p><p></p><p></p><p>B</p>");
     expect(md).not.toContain("\n\n\n");
+  });
+
+  it("strips data: and javascript: URIs from links", () => {
+    expect(htmlToMarkdown('<a href="data:text/html,<script>alert(1)</script>">click</a>')).toContain("click");
+    expect(htmlToMarkdown('<a href="data:text/html,<script>alert(1)</script>">click</a>')).not.toContain("data:");
+    expect(htmlToMarkdown('<a href="javascript:alert(1)">click</a>')).toContain("click");
+    expect(htmlToMarkdown('<a href="javascript:alert(1)">click</a>')).not.toContain("javascript:");
   });
 });
 

@@ -1,2 +1,3 @@
 #!/usr/bin/env node
-export {};
+import type { ProxyErrorResponse } from "./types.js";
+export declare function classifyError(err: unknown): ProxyErrorResponse;

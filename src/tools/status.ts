@@ -3,6 +3,7 @@ import { HttpsProxyAgent } from "https-proxy-agent";
 import { VERSION } from "../config.js";
 import type { ProxyAdapter, ProxyCredentials } from "../adapters/index.js";
 import type { ProxySuccessResponse } from "../types.js";
+import { QUOTA_NOTE } from "../validation.js";
 
 export async function agentproxyStatus(
   adapter?: ProxyAdapter,
@@ -61,7 +62,7 @@ export async function agentproxyStatus(
     },
     meta: {
       latency_ms,
-      quota: { credits_estimated: 1, note: "Check dashboard.novada.com for real-time balance" },
+      quota: { credits_estimated: 1, note: QUOTA_NOTE },
     },
   };
 

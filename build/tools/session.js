@@ -1,10 +1,7 @@
 import axios from "axios";
 import { HttpsProxyAgent } from "https-proxy-agent";
 import { agentproxyFetch } from "./fetch.js";
-// No hyphens in any proxy username param — providers use `-` as segment delimiter.
-const SAFE_COUNTRY = /^[a-zA-Z0-9_]+$/;
-const SAFE_CITY = /^[a-zA-Z0-9_]+$/;
-const SAFE_SESSION_ID = /^[a-zA-Z0-9_]+$/;
+import { SAFE_COUNTRY, SAFE_CITY, SAFE_SESSION_ID, QUOTA_NOTE } from "../validation.js";
 export async function agentproxySession(params, adapter, credentials) {
     const { verify_sticky = false } = params;
     // Make the main fetch call
@@ -65,7 +62,7 @@ export async function agentproxySession(params, adapter, credentials) {
             ...fetchResult.meta,
             session_id: params.session_id,
             session_verified,
-            quota: { credits_estimated: creditsEstimated, note: "Check dashboard.novada.com for real-time balance" },
+            quota: { credits_estimated: creditsEstimated, note: QUOTA_NOTE },
         },
     };
     if (result.meta.session_verified === undefined)

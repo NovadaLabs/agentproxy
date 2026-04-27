@@ -1,5 +1,5 @@
 import { agentproxyFetch } from "./fetch.js";
-const QUOTA_NOTE = "Check dashboard.novada.com for real-time balance";
+import { SAFE_COUNTRY, SAFE_SESSION_ID, QUOTA_NOTE } from "../validation.js";
 export async function agentproxyBatchFetch(params, adapter, credentials) {
     const { urls, country, session_id, format = "markdown", timeout = 60, concurrency = 3, } = params;
     const wallStart = Date.now();
@@ -73,6 +73,7 @@ export async function agentproxyBatchFetch(params, adapter, credentials) {
     const wallLatency = Date.now() - wallStart;
     const succeeded = results.filter(r => r.ok).length;
     const failed = results.filter(r => !r.ok).length;
+    const cachedCount = results.filter(r => r.ok && r.cache_hit).length;
     const result = {
         ok: true,
         tool: "agentproxy_batch_fetch",
@@ -87,7 +88,7 @@ export async function agentproxyBatchFetch(params, adapter, credentials) {
             concurrency,
             country,
             quota: {
-                credits_estimated: urls.length,
+                credits_estimated: urls.length - cachedCount,
                 note: QUOTA_NOTE,
             },
         },
@@ -96,8 +97,6 @@ export async function agentproxyBatchFetch(params, adapter, credentials) {
         delete result.meta.country;
     return JSON.stringify(result);
 }
-const SAFE_COUNTRY = /^[a-zA-Z0-9_]+$/;
-const SAFE_SESSION_ID = /^[a-zA-Z0-9_]+$/;
 export function validateBatchFetchParams(raw) {
     if (!raw.urls || !Array.isArray(raw.urls)) {
         throw new Error("urls is required and must be an array");

@@ -1,8 +1,7 @@
 import puppeteer from "puppeteer-core";
 import { htmlToMarkdown, htmlToText, unicodeSafeTruncate } from "../utils.js";
 import type { ProxySuccessResponse } from "../types.js";
-
-const QUOTA_NOTE = "Check dashboard.novada.com for real-time balance";
+import { QUOTA_NOTE } from "../validation.js";
 
 export interface RenderParams {
   url: string;
@@ -33,7 +32,7 @@ export async function agentproxyRender(
     try {
       // Use a shared deadline so goto + waitForSelector together never exceed timeout
       const deadline = Date.now() + timeout * 1000;
-      await page.goto(url, {
+      const response = await page.goto(url, {
         waitUntil: "domcontentloaded",
         timeout: timeout * 1000,
       });
@@ -58,12 +57,17 @@ export async function agentproxyRender(
 
       const latency_ms = Date.now() - startTime;
 
+      const statusCode = response?.status() ?? 200;
+
       const result: ProxySuccessResponse = {
         ok: true,
         tool: "agentproxy_render",
         data: {
           url,
+          status_code: statusCode,
           content: finalContent,
+          content_type: "text/html",
+          size_bytes: html.length,
           format,
         },
         meta: {

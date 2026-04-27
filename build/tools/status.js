@@ -1,6 +1,7 @@
 import axios from "axios";
 import { HttpsProxyAgent } from "https-proxy-agent";
 import { VERSION } from "../config.js";
+import { QUOTA_NOTE } from "../validation.js";
 export async function agentproxyStatus(adapter, credentials) {
     const startTime = Date.now();
     let connectivity_status = "UNAVAILABLE";
@@ -54,7 +55,7 @@ export async function agentproxyStatus(adapter, credentials) {
         },
         meta: {
             latency_ms,
-            quota: { credits_estimated: 1, note: "Check dashboard.novada.com for real-time balance" },
+            quota: { credits_estimated: 1, note: QUOTA_NOTE },
         },
     };
     // Remove undefined proxy_ip

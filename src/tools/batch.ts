@@ -1,8 +1,7 @@
 import { agentproxyFetch } from "./fetch.js";
 import type { ProxyAdapter, ProxyCredentials } from "../adapters/index.js";
 import type { ProxySuccessResponse } from "../types.js";
-
-const QUOTA_NOTE = "Check dashboard.novada.com for real-time balance";
+import { SAFE_COUNTRY, SAFE_SESSION_ID, QUOTA_NOTE } from "../validation.js";
 
 export interface BatchFetchParams {
   urls: string[];
@@ -113,6 +112,7 @@ export async function agentproxyBatchFetch(
   const wallLatency = Date.now() - wallStart;
   const succeeded = results.filter(r => r.ok).length;
   const failed = results.filter(r => !r.ok).length;
+  const cachedCount = results.filter(r => r.ok && r.cache_hit).length;
 
   const result: ProxySuccessResponse = {
     ok: true,
@@ -128,7 +128,7 @@ export async function agentproxyBatchFetch(
       concurrency,
       country,
       quota: {
-        credits_estimated: urls.length,
+        credits_estimated: urls.length - cachedCount,
         note: QUOTA_NOTE,
       },
     },
@@ -138,9 +138,6 @@ export async function agentproxyBatchFetch(
 
   return JSON.stringify(result);
 }
-
-const SAFE_COUNTRY    = /^[a-zA-Z0-9_]+$/;
-const SAFE_SESSION_ID = /^[a-zA-Z0-9_]+$/;
 
 export function validateBatchFetchParams(raw: Record<string, unknown>): BatchFetchParams {
   if (!raw.urls || !Array.isArray(raw.urls)) {

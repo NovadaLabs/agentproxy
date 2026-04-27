@@ -3,11 +3,7 @@ import { HttpsProxyAgent } from "https-proxy-agent";
 import { agentproxyFetch } from "./fetch.js";
 import type { ProxyAdapter, ProxyCredentials } from "../adapters/index.js";
 import type { ProxySuccessResponse } from "../types.js";
-
-// No hyphens in any proxy username param — providers use `-` as segment delimiter.
-const SAFE_COUNTRY    = /^[a-zA-Z0-9_]+$/;
-const SAFE_CITY       = /^[a-zA-Z0-9_]+$/;
-const SAFE_SESSION_ID = /^[a-zA-Z0-9_]+$/;
+import { SAFE_COUNTRY, SAFE_CITY, SAFE_SESSION_ID, QUOTA_NOTE } from "../validation.js";
 
 export interface SessionParams {
   session_id: string;
@@ -94,7 +90,7 @@ export async function agentproxySession(
       ...fetchResult.meta,
       session_id: params.session_id,
       session_verified,
-      quota: { credits_estimated: creditsEstimated, note: "Check dashboard.novada.com for real-time balance" },
+      quota: { credits_estimated: creditsEstimated, note: QUOTA_NOTE },
     },
   };
 

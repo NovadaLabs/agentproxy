@@ -1,6 +1,6 @@
 import puppeteer from "puppeteer-core";
 import { htmlToMarkdown, htmlToText, unicodeSafeTruncate } from "../utils.js";
-const QUOTA_NOTE = "Check dashboard.novada.com for real-time balance";
+import { QUOTA_NOTE } from "../validation.js";
 export async function agentproxyRender(params, browserWsEndpoint) {
     const { url, format = "markdown", wait_for, timeout = 60 } = params;
     if (!url.startsWith("http://") && !url.startsWith("https://")) {
@@ -16,7 +16,7 @@ export async function agentproxyRender(params, browserWsEndpoint) {
         try {
             // Use a shared deadline so goto + waitForSelector together never exceed timeout
             const deadline = Date.now() + timeout * 1000;
-            await page.goto(url, {
+            const response = await page.goto(url, {
                 waitUntil: "domcontentloaded",
                 timeout: timeout * 1000,
             });
@@ -35,12 +35,16 @@ export async function agentproxyRender(params, browserWsEndpoint) {
                 ? unicodeSafeTruncate(content, 100_000) + "\n\n[... truncated — rendered page is large]"
                 : content;
             const latency_ms = Date.now() - startTime;
+            const statusCode = response?.status() ?? 200;
             const result = {
                 ok: true,
                 tool: "agentproxy_render",
                 data: {
                     url,
+                    status_code: statusCode,
                     content: finalContent,
+                    content_type: "text/html",
+                    size_bytes: html.length,
                     format,
                 },
                 meta: {

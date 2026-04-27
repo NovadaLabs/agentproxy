@@ -1,9 +1,14 @@
 export function unicodeSafeTruncate(s: string, maxChars: number): string {
   if (s.length <= maxChars) return s;
-  return [...s].slice(0, maxChars).join("");
+  let end = maxChars;
+  // Don't split a surrogate pair at the boundary
+  const code = s.charCodeAt(end - 1);
+  if (code >= 0xD800 && code <= 0xDBFF) end--;        // high surrogate stranded → drop it
+  else if (code >= 0xDC00 && code <= 0xDFFF) end -= 2; // low surrogate → drop the whole pair
+  return s.slice(0, end);
 }
 
-function decodeHtmlEntities(s: string): string {
+export function decodeHtmlEntities(s: string): string {
   return s
     .replace(/&amp;/g, "&")
     .replace(/&lt;/g, "<")
@@ -25,7 +30,11 @@ export function htmlToMarkdown(html: string): string {
     .replace(/<li[^>]*>/gi, "- ")
     .replace(/<h([1-6])[^>]*>/gi, (_, n) => "#".repeat(Number(n)) + " ")
     .replace(/<a[^>]+href=["']([^"']+)["'][^>]*>([^<]*)<\/a>/gi,
-      (_, href, text) => `[${text}](${decodeHtmlEntities(href)})`)
+      (_, href, text) => {
+        const decoded = decodeHtmlEntities(href);
+        if (decoded.startsWith("data:") || decoded.startsWith("javascript:")) return text;
+        return `[${text}](${decoded})`;
+      })
     .replace(/<[^>]+>/g, "")
     .replace(/&amp;/g, "&")
     .replace(/&lt;/g, "<")

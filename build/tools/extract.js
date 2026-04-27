@@ -1,5 +1,7 @@
 import { agentproxyFetch } from "./fetch.js";
 import { agentproxyRender } from "./render.js";
+import { decodeHtmlEntities } from "../utils.js";
+import { SAFE_COUNTRY, SAFE_CITY, SAFE_SESSION_ID } from "../validation.js";
 /**
  * Extract structured data from a URL using pattern matching on the fetched HTML.
  *
@@ -16,7 +18,7 @@ const RENDER_ESCALATION_PATTERNS = [
     "ECONNRESET", "ECONNREFUSED",
     "403", "blocked", "bot detection",
 ];
-function shouldEscalateToRender(msg) {
+export function shouldEscalateToRender(msg) {
     return RENDER_ESCALATION_PATTERNS.some(p => msg.toLowerCase().includes(p.toLowerCase()));
 }
 export async function agentproxyExtract(params, adapter, credentials, browserWsEndpoint) {
@@ -90,7 +92,7 @@ export async function agentproxyExtract(params, adapter, credentials, browserWsE
  * Uses common patterns: meta tags, Open Graph, Schema.org JSON-LD, headings,
  * and semantic HTML. Falls back to regex scanning for common field names.
  */
-function extractField(html, field) {
+export function extractField(html, field) {
     const f = field.toLowerCase().trim();
     // --- Title ---
     if (f === "title" || f === "name" || f === "product_name") {
@@ -181,7 +183,7 @@ function extractMetaContent(html, name) {
     for (const re of patterns) {
         const m = html.match(re);
         if (m?.[1])
-            return decodeEntities(m[1]);
+            return decodeHtmlEntities(m[1]);
     }
     return null;
 }
@@ -209,7 +211,7 @@ function extractJsonLd(html, key) {
 function extractTag(html, tag) {
     const re = new RegExp(`<${tag}[^>]*>([^<]+)</${tag}>`, "i");
     const m = html.match(re);
-    return m?.[1] ? decodeEntities(m[1]).trim() : null;
+    return m?.[1] ? decodeHtmlEntities(m[1]).trim() : null;
 }
 function extractAllTags(html, tag) {
     const re = new RegExp(`<${tag}[^>]*>([^<]+)</${tag}>`, "gi");
@@ -217,7 +219,7 @@ function extractAllTags(html, tag) {
     let m;
     while ((m = re.exec(html)) !== null) {
         if (m[1])
-            results.push(decodeEntities(m[1]).trim());
+            results.push(decodeHtmlEntities(m[1]).trim());
     }
     return results.length ? results : [];
 }
@@ -248,14 +250,16 @@ function extractPriceFromHtml(html) {
     const gm = html.match(genericPriceRe);
     return gm?.[1]?.trim() ?? null;
 }
-function deepFind(obj, key) {
+export function deepFind(obj, key, depth = 0) {
+    if (depth > 20)
+        return undefined;
     if (obj === null || obj === undefined)
         return undefined;
     if (typeof obj !== "object")
         return undefined;
     if (Array.isArray(obj)) {
         for (const item of obj) {
-            const found = deepFind(item, key);
+            const found = deepFind(item, key, depth + 1);
             if (found !== undefined)
                 return found;
         }
@@ -265,7 +269,7 @@ function deepFind(obj, key) {
     if (key in record)
         return record[key];
     for (const v of Object.values(record)) {
-        const found = deepFind(v, key);
+        const found = deepFind(v, key, depth + 1);
         if (found !== undefined)
             return found;
     }
@@ -274,19 +278,7 @@ function deepFind(obj, key) {
 function escapeRegex(s) {
     return s.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
 }
-function decodeEntities(s) {
-    return s
-        .replace(/&amp;/g, "&")
-        .replace(/&lt;/g, "<")
-        .replace(/&gt;/g, ">")
-        .replace(/&quot;/g, '"')
-        .replace(/&#39;/g, "'")
-        .replace(/&nbsp;/g, " ");
-}
 // --- Validation ---
-const SAFE_COUNTRY = /^[a-zA-Z0-9_]+$/;
-const SAFE_CITY = /^[a-zA-Z0-9_]+$/;
-const SAFE_SESSION_ID = /^[a-zA-Z0-9_]+$/;
 export function validateExtractParams(raw) {
     if (!raw.url || typeof raw.url !== "string") {
         throw new Error("url is required and must be a string");
