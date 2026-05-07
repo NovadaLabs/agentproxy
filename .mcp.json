@@ -1,0 +1,12 @@
+{
+  "mcpServers": {
+    "novada-proxy": {
+      "command": "npx",
+      "args": ["-y", "novada-proxy-mcp@latest"],
+      "env": {
+        "NOVADA_PROXY_USER": "",
+        "NOVADA_PROXY_PASS": ""
+      }
+    }
+  }
+}

@@ -1,0 +1,9 @@
+{
+  "name": "novada-proxy",
+  "description": "Residential proxy tools for AI agents — fetch, crawl, search, extract through 2M+ IPs. Bypass Cloudflare/Akamai/DataDome, geo-target 195+ countries. Multi-provider: Novada, BrightData, Smartproxy, Oxylabs.",
+  "version": "1.8.2",
+  "author": {
+    "name": "NovadaLabs",
+    "url": "https://novada.com"
+  }
+}
