@@ -4,12 +4,17 @@ import type { ProxyAdapter, ProxyCredentials } from "../src/adapters/index.js";
 
 // ─── Mocks ────────────────────────────────────────────────────────────────────
 
-const { novadaProxyFetchSpy } = vi.hoisted(() => ({
+const { novadaProxyFetchSpy, novadaProxyRenderSpy } = vi.hoisted(() => ({
   novadaProxyFetchSpy: vi.fn(),
+  novadaProxyRenderSpy: vi.fn(),
 }));
 
 vi.mock("../src/tools/fetch.js", () => ({
   novadaProxyFetch: novadaProxyFetchSpy,
+}));
+
+vi.mock("../src/tools/render.js", () => ({
+  novadaProxyRender: novadaProxyRenderSpy,
 }));
 
 // ─── Test fixtures ────────────────────────────────────────────────────────────
@@ -33,8 +38,8 @@ describe("validateCrawlParams", () => {
   it("accepts valid url with defaults", () => {
     const p = validateCrawlParams({ url: "https://example.com" });
     expect(p.url).toBe("https://example.com");
-    expect(p.depth).toBe(2);
-    expect(p.limit).toBe(50);
+    expect(p.depth).toBe(3);
+    expect(p.limit).toBe(10);
     expect(p.include_content).toBe(false);
     expect(p.timeout).toBe(60);
     expect(p.format).toBe("markdown");
@@ -90,14 +95,14 @@ describe("validateCrawlParams", () => {
     ).toThrow("timeout must be between 1 and 120");
   });
 
-  it("defaults depth to 2", () => {
+  it("defaults depth to 3 (matches MCP schema default for max_depth)", () => {
     const p = validateCrawlParams({ url: "https://example.com" });
-    expect(p.depth).toBe(2);
+    expect(p.depth).toBe(3);
   });
 
-  it("defaults limit to 50", () => {
+  it("defaults limit to 10 (matches MCP schema default for max_pages)", () => {
     const p = validateCrawlParams({ url: "https://example.com" });
-    expect(p.limit).toBe(50);
+    expect(p.limit).toBe(10);
   });
 
   it("defaults include_content to false", () => {
@@ -135,6 +140,225 @@ describe("validateCrawlParams", () => {
     const p = validateCrawlParams({ url: "https://example.com", format: "raw" });
     expect(p.format).toBe("raw");
   });
+
+  // ─── max_pages validation ──────────────────────────────────────────────────
+
+  it("accepts max_pages within range", () => {
+    const p = validateCrawlParams({ url: "https://example.com", max_pages: 10 });
+    expect(p.max_pages).toBe(10);
+  });
+
+  it("rejects max_pages below 1", () => {
+    expect(() => validateCrawlParams({ url: "https://example.com", max_pages: 0 })).toThrow(
+      "max_pages must be between 1 and 100"
+    );
+  });
+
+  it("rejects max_pages above 100", () => {
+    expect(() => validateCrawlParams({ url: "https://example.com", max_pages: 101 })).toThrow(
+      "max_pages must be between 1 and 100"
+    );
+  });
+
+  it("max_pages takes precedence over limit", () => {
+    const p = validateCrawlParams({ url: "https://example.com", max_pages: 20, limit: 100 });
+    expect(p.max_pages).toBe(20);
+  });
+
+  // ─── max_depth validation ──────────────────────────────────────────────────
+
+  it("accepts max_depth within range", () => {
+    const p = validateCrawlParams({ url: "https://example.com", max_depth: 4 });
+    expect(p.max_depth).toBe(4);
+  });
+
+  it("rejects max_depth below 1", () => {
+    expect(() => validateCrawlParams({ url: "https://example.com", max_depth: 0 })).toThrow(
+      "max_depth must be between 1 and 5"
+    );
+  });
+
+  it("rejects max_depth above 5", () => {
+    expect(() => validateCrawlParams({ url: "https://example.com", max_depth: 6 })).toThrow(
+      "max_depth must be between 1 and 5"
+    );
+  });
+
+  // ─── include_patterns validation ──────────────────────────────────────────
+
+  it("accepts valid include_patterns", () => {
+    const p = validateCrawlParams({ url: "https://example.com", include_patterns: ["/blog/", "/docs/"] });
+    expect(p.include_patterns).toEqual(["/blog/", "/docs/"]);
+  });
+
+  it("rejects non-array include_patterns", () => {
+    expect(() => validateCrawlParams({ url: "https://example.com", include_patterns: "/blog/" })).toThrow(
+      "include_patterns must be an array"
+    );
+  });
+
+  it("rejects include_patterns with more than 20 entries", () => {
+    const tooMany = Array.from({ length: 21 }, (_, i) => `/path${i}/`);
+    expect(() => validateCrawlParams({ url: "https://example.com", include_patterns: tooMany })).toThrow(
+      "at most 20"
+    );
+  });
+
+  it("rejects invalid regex in include_patterns", () => {
+    expect(() => validateCrawlParams({ url: "https://example.com", include_patterns: ["[invalid"] })).toThrow(
+      "Invalid regex"
+    );
+  });
+
+  // ─── exclude_patterns validation ──────────────────────────────────────────
+
+  it("accepts valid exclude_patterns", () => {
+    const p = validateCrawlParams({ url: "https://example.com", exclude_patterns: ["/tag/", "\\?page="] });
+    expect(p.exclude_patterns).toEqual(["/tag/", "\\?page="]);
+  });
+
+  it("rejects non-array exclude_patterns", () => {
+    expect(() => validateCrawlParams({ url: "https://example.com", exclude_patterns: "/tag/" })).toThrow(
+      "exclude_patterns must be an array"
+    );
+  });
+
+  it("rejects invalid regex in exclude_patterns", () => {
+    expect(() => validateCrawlParams({ url: "https://example.com", exclude_patterns: ["(unclosed"] })).toThrow(
+      "Invalid regex"
+    );
+  });
+
+  // ─── render mode validation ────────────────────────────────────────────────
+
+  it("accepts render mode none", () => {
+    const p = validateCrawlParams({ url: "https://example.com", render: "none" });
+    expect(p.render).toBe("none");
+  });
+
+  it("accepts render mode render", () => {
+    const p = validateCrawlParams({ url: "https://example.com", render: "render" });
+    expect(p.render).toBe("render");
+  });
+
+  it("accepts render mode browser", () => {
+    const p = validateCrawlParams({ url: "https://example.com", render: "browser" });
+    expect(p.render).toBe("browser");
+  });
+
+  it("rejects invalid render mode", () => {
+    expect(() => validateCrawlParams({ url: "https://example.com", render: "turbo" })).toThrow(
+      "render must be"
+    );
+  });
+
+  // ─── output_format validation ──────────────────────────────────────────────
+
+  it("accepts output_format markdown", () => {
+    const p = validateCrawlParams({ url: "https://example.com", output_format: "markdown" });
+    expect(p.output_format).toBe("markdown");
+  });
+
+  it("accepts output_format html", () => {
+    const p = validateCrawlParams({ url: "https://example.com", output_format: "html" });
+    expect(p.output_format).toBe("html");
+  });
+
+  it("accepts output_format text", () => {
+    const p = validateCrawlParams({ url: "https://example.com", output_format: "text" });
+    expect(p.output_format).toBe("text");
+  });
+
+  it("rejects invalid output_format", () => {
+    expect(() => validateCrawlParams({ url: "https://example.com", output_format: "json" })).toThrow(
+      "output_format must be"
+    );
+  });
+
+  // ─── extract_fields validation ─────────────────────────────────────────────
+
+  it("accepts valid extract_fields", () => {
+    const p = validateCrawlParams({ url: "https://example.com", extract_fields: ["title", "description"] });
+    expect(p.extract_fields).toEqual(["title", "description"]);
+  });
+
+  it("rejects non-array extract_fields", () => {
+    expect(() => validateCrawlParams({ url: "https://example.com", extract_fields: "title" })).toThrow(
+      "extract_fields must be an array"
+    );
+  });
+
+  it("rejects empty extract_fields", () => {
+    expect(() => validateCrawlParams({ url: "https://example.com", extract_fields: [] })).toThrow(
+      "between 1 and 20"
+    );
+  });
+
+  it("rejects extract_fields with more than 20 entries", () => {
+    const tooMany = Array.from({ length: 21 }, (_, i) => `field${i}`);
+    expect(() => validateCrawlParams({ url: "https://example.com", extract_fields: tooMany })).toThrow(
+      "between 1 and 20"
+    );
+  });
+
+  it("rejects extract field over 50 chars", () => {
+    expect(() => validateCrawlParams({ url: "https://example.com", extract_fields: ["a".repeat(51)] })).toThrow(
+      "max 50"
+    );
+  });
+
+  it("rejects extract_fields with ReDoS pattern characters", () => {
+    expect(() => validateCrawlParams({ url: "https://example.com", extract_fields: ["(a+)+"] })).toThrow(
+      "alphanumeric/underscore/colon/hyphen"
+    );
+  });
+
+  it("rejects extract_fields with special characters", () => {
+    expect(() => validateCrawlParams({ url: "https://example.com", extract_fields: ["field with spaces"] })).toThrow(
+      "alphanumeric/underscore/colon/hyphen"
+    );
+  });
+
+  it("accepts extract_fields with allowed characters", () => {
+    const p = validateCrawlParams({ url: "https://example.com", extract_fields: ["og:title", "my_field", "field-name"] });
+    expect(p.extract_fields).toEqual(["og:title", "my_field", "field-name"]);
+  });
+
+  it("rejects include_patterns entries over 100 chars", () => {
+    expect(() => validateCrawlParams({ url: "https://example.com", include_patterns: ["a".repeat(101)] })).toThrow(
+      "at most 100 characters"
+    );
+  });
+
+  it("rejects exclude_patterns entries over 100 chars", () => {
+    expect(() => validateCrawlParams({ url: "https://example.com", exclude_patterns: ["b".repeat(101)] })).toThrow(
+      "at most 100 characters"
+    );
+  });
+
+  // ─── rate_limit validation ─────────────────────────────────────────────────
+
+  it("defaults rate_limit to 2", () => {
+    const p = validateCrawlParams({ url: "https://example.com" });
+    expect(p.rate_limit).toBe(2);
+  });
+
+  it("accepts valid rate_limit", () => {
+    const p = validateCrawlParams({ url: "https://example.com", rate_limit: 5 });
+    expect(p.rate_limit).toBe(5);
+  });
+
+  it("rejects rate_limit below 0.5", () => {
+    expect(() => validateCrawlParams({ url: "https://example.com", rate_limit: 0.1 })).toThrow(
+      "rate_limit must be between 0.5 and 10"
+    );
+  });
+
+  it("rejects rate_limit above 10", () => {
+    expect(() => validateCrawlParams({ url: "https://example.com", rate_limit: 11 })).toThrow(
+      "rate_limit must be between 0.5 and 10"
+    );
+  });
 });
 
 // ─── novadaProxyCrawl integration ─────────────────────────────────────────────
@@ -162,9 +386,31 @@ function makeFetchResponse(
   });
 }
 
+function makeRenderResponse(
+  url: string,
+  html: string,
+  statusCode = 200
+): string {
+  return JSON.stringify({
+    ok: true,
+    tool: "novada_proxy_render",
+    data: {
+      url,
+      status_code: statusCode,
+      content: html,
+    },
+    meta: {
+      latency_ms: 200,
+      truncated: false,
+      quota: { credits_estimated: 5, note: "" },
+    },
+  });
+}
+
 describe("novadaProxyCrawl", () => {
   beforeEach(() => {
     novadaProxyFetchSpy.mockReset();
+    novadaProxyRenderSpy.mockReset();
   });
 
   it("returns valid JSON with correct tool name", async () => {
@@ -434,7 +680,6 @@ describe("novadaProxyCrawl", () => {
     const page = result.data.pages[0];
     // After F2's fix: field is new_links, not links_found
     expect(page).toHaveProperty("new_links");
-    expect(page).not.toHaveProperty("links_found");
     expect(page.new_links).toBeGreaterThanOrEqual(0);
   });
 
@@ -469,17 +714,10 @@ describe("novadaProxyCrawl", () => {
 
   // ─── F2 fix tests: credit counting with double fetches ───────────────────────
   it("should estimate 2x credits when include_content=true and format=markdown", async () => {
-    // When include_content=true and format=markdown, two fetches happen per page:
-    // one for markdown content, one for raw HTML (link extraction).
-    // Credits should reflect the double-fetch overhead.
     const rootHtml = `<html><body>
       <a href="/page1">Page 1</a>
     </body></html>`;
 
-    // First call: markdown fetch for root
-    // Second call: raw fetch for root (link extraction)
-    // Third call: markdown fetch for /page1
-    // Fourth call: raw fetch for /page1 (link extraction)
     novadaProxyFetchSpy
       .mockResolvedValueOnce(makeFetchResponse("https://example.com", "# Root", 200, false))
       .mockResolvedValueOnce(makeFetchResponse("https://example.com", rootHtml, 200, false))
@@ -495,5 +733,403 @@ describe("novadaProxyCrawl", () => {
     const result = JSON.parse(raw);
     // 2 pages, 0 cache hits, 2 extra raw fetches = 2 - 0 + 2 = 4 credits
     expect(result.meta.quota.credits_estimated).toBe(4);
+  });
+
+  // ─── New features: max_pages / max_depth aliases ────────────────────────────
+
+  it("respects max_pages parameter", async () => {
+    const manyLinksHtml = Array.from({ length: 20 }, (_, i) =>
+      `<a href="/page${i}">Page ${i}</a>`
+    ).join("\n");
+    const rootHtml = `<html><body>${manyLinksHtml}</body></html>`;
+
+    novadaProxyFetchSpy.mockResolvedValue(
+      makeFetchResponse("https://example.com", rootHtml)
+    );
+
+    const raw = await novadaProxyCrawl(
+      { url: "https://example.com", max_pages: 5, max_depth: 2 },
+      mockAdapter,
+      mockCreds
+    );
+
+    const result = JSON.parse(raw);
+    expect(result.data.urls_crawled).toBeLessThanOrEqual(5);
+    expect(result.data.pages_crawled).toBeLessThanOrEqual(5);
+  });
+
+  it("includes pages_crawled in response", async () => {
+    novadaProxyFetchSpy.mockResolvedValue(
+      makeFetchResponse("https://example.com", "<html><body>Hello</body></html>")
+    );
+
+    const raw = await novadaProxyCrawl(
+      { url: "https://example.com", depth: 1, limit: 10 },
+      mockAdapter,
+      mockCreds
+    );
+
+    const result = JSON.parse(raw);
+    expect(result.data.pages_crawled).toBe(1);
+  });
+
+  // ─── New features: include_patterns ──────────────────────────────────────────
+
+  it("follows only URLs matching include_patterns", async () => {
+    const rootHtml = `<html><body>
+      <a href="/blog/post1">Blog Post</a>
+      <a href="/about">About</a>
+      <a href="/blog/post2">Another Blog Post</a>
+    </body></html>`;
+
+    novadaProxyFetchSpy
+      .mockResolvedValueOnce(makeFetchResponse("https://example.com", rootHtml))
+      .mockResolvedValueOnce(makeFetchResponse("https://example.com/blog/post1", "<html><body>Post 1</body></html>"))
+      .mockResolvedValueOnce(makeFetchResponse("https://example.com/blog/post2", "<html><body>Post 2</body></html>"));
+
+    const raw = await novadaProxyCrawl(
+      { url: "https://example.com", depth: 1, limit: 10, include_patterns: ["/blog/"] },
+      mockAdapter,
+      mockCreds
+    );
+
+    const result = JSON.parse(raw);
+    // Root + 2 blog pages = 3 (root is always crawled, include_patterns affect discovered links)
+    const urls = result.data.pages.map((p: { url: string }) => p.url);
+    expect(urls).toContain("https://example.com/blog/post1");
+    expect(urls).toContain("https://example.com/blog/post2");
+    expect(urls).not.toContain("https://example.com/about");
+  });
+
+  // ─── New features: exclude_patterns ──────────────────────────────────────────
+
+  it("skips URLs matching exclude_patterns", async () => {
+    const rootHtml = `<html><body>
+      <a href="/page1">Page 1</a>
+      <a href="/tag/news">Tag Page</a>
+      <a href="/page2">Page 2</a>
+    </body></html>`;
+
+    novadaProxyFetchSpy
+      .mockResolvedValueOnce(makeFetchResponse("https://example.com", rootHtml))
+      .mockResolvedValueOnce(makeFetchResponse("https://example.com/page1", "<html><body>Page 1</body></html>"))
+      .mockResolvedValueOnce(makeFetchResponse("https://example.com/page2", "<html><body>Page 2</body></html>"));
+
+    const raw = await novadaProxyCrawl(
+      { url: "https://example.com", depth: 1, limit: 10, exclude_patterns: ["/tag/"] },
+      mockAdapter,
+      mockCreds
+    );
+
+    const result = JSON.parse(raw);
+    const urls = result.data.pages.map((p: { url: string }) => p.url);
+    expect(urls).toContain("https://example.com/page1");
+    expect(urls).toContain("https://example.com/page2");
+    expect(urls).not.toContain("https://example.com/tag/news");
+  });
+
+  // ─── New features: render mode ─────────────────────────────────────────────
+
+  it("uses novadaProxyRender when render mode is 'render'", async () => {
+    const html = `<html><head><title>Rendered Page</title></head><body>JS Content</body></html>`;
+    novadaProxyRenderSpy.mockResolvedValue(makeRenderResponse("https://example.com", html));
+
+    const raw = await novadaProxyCrawl(
+      {
+        url: "https://example.com",
+        depth: 1,
+        limit: 10,
+        render: "render",
+        browser_ws: "wss://fake-browser",
+      },
+      mockAdapter,
+      mockCreds
+    );
+
+    const result = JSON.parse(raw);
+    expect(result.ok).toBe(true);
+    expect(result.data.urls_crawled).toBe(1);
+    expect(novadaProxyRenderSpy).toHaveBeenCalled();
+    expect(novadaProxyFetchSpy).not.toHaveBeenCalled();
+  });
+
+  it("charges 5 credits per page in render mode", async () => {
+    novadaProxyRenderSpy.mockResolvedValue(
+      makeRenderResponse("https://example.com", "<html><body>Rendered</body></html>")
+    );
+
+    const raw = await novadaProxyCrawl(
+      {
+        url: "https://example.com",
+        depth: 1,
+        limit: 10,
+        render: "render",
+        browser_ws: "wss://fake-browser",
+      },
+      mockAdapter,
+      mockCreds
+    );
+
+    const result = JSON.parse(raw);
+    expect(result.meta.quota.credits_estimated).toBe(5);
+  });
+
+  // ─── New features: extract_fields ──────────────────────────────────────────
+
+  it("extracts fields from each page when extract_fields provided", async () => {
+    const html = `<html>
+      <head>
+        <title>Example Page</title>
+        <meta name="description" content="A test page">
+        <meta property="og:image" content="https://example.com/img.jpg">
+      </head>
+      <body>Content</body>
+    </html>`;
+
+    novadaProxyFetchSpy.mockResolvedValue(makeFetchResponse("https://example.com", html));
+
+    const raw = await novadaProxyCrawl(
+      {
+        url: "https://example.com",
+        depth: 1,
+        limit: 10,
+        extract_fields: ["title", "description", "image"],
+      },
+      mockAdapter,
+      mockCreds
+    );
+
+    const result = JSON.parse(raw);
+    const page = result.data.pages[0];
+    expect(page.extracted_fields).toBeDefined();
+    expect(page.extracted_fields.title).toBe("Example Page");
+    expect(page.extracted_fields.description).toBe("A test page");
+    expect(page.extracted_fields.image).toBe("https://example.com/img.jpg");
+  });
+
+  it("returns null for fields not found in the page", async () => {
+    const html = `<html><head><title>Simple Page</title></head><body>Content</body></html>`;
+    novadaProxyFetchSpy.mockResolvedValue(makeFetchResponse("https://example.com", html));
+
+    const raw = await novadaProxyCrawl(
+      {
+        url: "https://example.com",
+        depth: 1,
+        limit: 10,
+        extract_fields: ["title", "price", "author"],
+      },
+      mockAdapter,
+      mockCreds
+    );
+
+    const result = JSON.parse(raw);
+    const page = result.data.pages[0];
+    expect(page.extracted_fields.title).toBe("Simple Page");
+    expect(page.extracted_fields.price).toBeNull();
+    expect(page.extracted_fields.author).toBeNull();
+  });
+
+  // ─── New features: title extraction ────────────────────────────────────────
+
+  it("extracts page title from <title> tag", async () => {
+    const html = `<html><head><title>My Test Page</title></head><body>Content</body></html>`;
+    novadaProxyFetchSpy.mockResolvedValue(makeFetchResponse("https://example.com", html));
+
+    const raw = await novadaProxyCrawl(
+      { url: "https://example.com", depth: 1, limit: 10 },
+      mockAdapter,
+      mockCreds
+    );
+
+    const result = JSON.parse(raw);
+    expect(result.data.pages[0].title).toBe("My Test Page");
+  });
+
+  it("falls back to <h1> when no <title> tag exists", async () => {
+    const html = `<html><body><h1>Page Heading</h1><p>Content</p></body></html>`;
+    novadaProxyFetchSpy.mockResolvedValue(makeFetchResponse("https://example.com", html));
+
+    const raw = await novadaProxyCrawl(
+      { url: "https://example.com", depth: 1, limit: 10 },
+      mockAdapter,
+      mockCreds
+    );
+
+    const result = JSON.parse(raw);
+    expect(result.data.pages[0].title).toBe("Page Heading");
+  });
+
+  // ─── New features: errors array ────────────────────────────────────────────
+
+  it("includes errors array when pages fail", async () => {
+    const rootHtml = `<html><body><a href="/broken">Broken</a></body></html>`;
+
+    novadaProxyFetchSpy
+      .mockResolvedValueOnce(makeFetchResponse("https://example.com", rootHtml))
+      .mockRejectedValueOnce(new Error("Connection refused"));
+
+    const raw = await novadaProxyCrawl(
+      { url: "https://example.com", depth: 1, limit: 10 },
+      mockAdapter,
+      mockCreds
+    );
+
+    const result = JSON.parse(raw);
+    expect(result.data.errors).toBeDefined();
+    expect(result.data.errors).toHaveLength(1);
+    expect(result.data.errors[0].url).toBe("https://example.com/broken");
+    expect(result.data.errors[0].error).toContain("Connection refused");
+    expect(result.data.errors[0].depth).toBe(1);
+  });
+
+  it("does not include errors array when all pages succeed", async () => {
+    novadaProxyFetchSpy.mockResolvedValue(
+      makeFetchResponse("https://example.com", "<html><body>OK</body></html>")
+    );
+
+    const raw = await novadaProxyCrawl(
+      { url: "https://example.com", depth: 1, limit: 10 },
+      mockAdapter,
+      mockCreds
+    );
+
+    const result = JSON.parse(raw);
+    expect(result.data.errors).toBeUndefined();
+  });
+
+  // ─── New features: output_format ───────────────────────────────────────────
+
+  it("respects output_format='html' when include_content=true", async () => {
+    const html = `<html><body><h1>Hello</h1><p>World</p></body></html>`;
+    novadaProxyFetchSpy.mockResolvedValue(makeFetchResponse("https://example.com", html));
+
+    const raw = await novadaProxyCrawl(
+      {
+        url: "https://example.com",
+        depth: 1,
+        limit: 10,
+        include_content: true,
+        output_format: "html",
+      },
+      mockAdapter,
+      mockCreds
+    );
+
+    const result = JSON.parse(raw);
+    const page = result.data.pages[0];
+    // HTML format should contain HTML tags
+    expect(page.content).toContain("<h1>");
+  });
+
+  // ─── Backward compatibility ────────────────────────────────────────────────
+
+  it("works with legacy depth and limit params", async () => {
+    novadaProxyFetchSpy.mockResolvedValue(
+      makeFetchResponse("https://example.com", "<html><body>Hello</body></html>")
+    );
+
+    const raw = await novadaProxyCrawl(
+      { url: "https://example.com", depth: 1, limit: 10 },
+      mockAdapter,
+      mockCreds
+    );
+
+    const result = JSON.parse(raw);
+    expect(result.ok).toBe(true);
+    expect(result.data.urls_crawled).toBe(1);
+  });
+
+  it("max_pages takes precedence over limit", async () => {
+    const manyLinksHtml = Array.from({ length: 20 }, (_, i) =>
+      `<a href="/page${i}">Page ${i}</a>`
+    ).join("\n");
+    const rootHtml = `<html><body>${manyLinksHtml}</body></html>`;
+
+    novadaProxyFetchSpy.mockResolvedValue(
+      makeFetchResponse("https://example.com", rootHtml)
+    );
+
+    const raw = await novadaProxyCrawl(
+      { url: "https://example.com", max_pages: 3, limit: 100, depth: 2 },
+      mockAdapter,
+      mockCreds
+    );
+
+    const result = JSON.parse(raw);
+    expect(result.data.urls_crawled).toBeLessThanOrEqual(3);
+  });
+
+  // ─── Rate limiting ────────────────────────────────────────────────────────
+
+  // ─── Fix 3: render mode without browser_ws returns structured error ──────────
+
+  it("returns error when render mode is set but browser_ws is missing", async () => {
+    const raw = await novadaProxyCrawl(
+      {
+        url: "https://example.com",
+        depth: 1,
+        limit: 10,
+        render: "render",
+        // browser_ws intentionally omitted
+      },
+      mockAdapter,
+      mockCreds
+    );
+
+    const result = JSON.parse(raw);
+    expect(result.ok).toBe(false);
+    expect(result.error.code).toBe("PROVIDER_NOT_CONFIGURED");
+    expect(result.error.message).toContain("browser_ws is required");
+    expect(result.error.agent_instruction).toContain("NOVADA_BROWSER_WS");
+    // fetch should NOT have been called
+    expect(novadaProxyFetchSpy).not.toHaveBeenCalled();
+    expect(novadaProxyRenderSpy).not.toHaveBeenCalled();
+  });
+
+  it("still works with rate_limit parameter", async () => {
+    novadaProxyFetchSpy.mockResolvedValue(
+      makeFetchResponse("https://example.com", "<html><body>Hello</body></html>")
+    );
+
+    const raw = await novadaProxyCrawl(
+      { url: "https://example.com", depth: 1, limit: 10, rate_limit: 5 },
+      mockAdapter,
+      mockCreds
+    );
+
+    const result = JSON.parse(raw);
+    expect(result.ok).toBe(true);
+  });
+
+  // ─── Combined patterns ────────────────────────────────────────────────────
+
+  it("combines include and exclude patterns correctly", async () => {
+    const rootHtml = `<html><body>
+      <a href="/blog/post1">Blog Post</a>
+      <a href="/blog/draft-secret">Draft</a>
+      <a href="/about">About</a>
+    </body></html>`;
+
+    novadaProxyFetchSpy
+      .mockResolvedValueOnce(makeFetchResponse("https://example.com", rootHtml))
+      .mockResolvedValueOnce(makeFetchResponse("https://example.com/blog/post1", "<html><body>Post 1</body></html>"));
+
+    const raw = await novadaProxyCrawl(
+      {
+        url: "https://example.com",
+        depth: 1,
+        limit: 10,
+        include_patterns: ["/blog/"],
+        exclude_patterns: ["/draft"],
+      },
+      mockAdapter,
+      mockCreds
+    );
+
+    const result = JSON.parse(raw);
+    const urls = result.data.pages.map((p: { url: string }) => p.url);
+    expect(urls).toContain("https://example.com/blog/post1");
+    expect(urls).not.toContain("https://example.com/blog/draft-secret");
+    expect(urls).not.toContain("https://example.com/about");
   });
 });

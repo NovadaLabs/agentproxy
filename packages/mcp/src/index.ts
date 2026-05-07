@@ -180,17 +180,25 @@ const TOOLS = [
   {
     name: "novada_proxy_crawl",
     description:
-      "Crawl a website recursively via BFS from a starting URL to configurable depth. Returns all discovered URLs with metadata. Optionally includes page content inline.\n\nWHEN TO USE: Full-site scraping, sitemap generation, content indexing — when you need MORE than a single page (novada_proxy_map is single-page only).\nUSE novada_proxy_map INSTEAD IF: You only need links from ONE page.\nUSE novada_proxy_batch_fetch INSTEAD IF: You already have the URLs and just need content.\nWORKFLOW: crawl(depth=2) → get URL tree → batch_fetch the pages you need.\nNOTE: include_content=false (default) returns URLs only — fast and cheap. Set include_content=true to get page content inline (slower, costs 1 credit per page).\nCACHING: Pages already in cache from prior fetch/map/crawl calls cost 0 credits.\nON FAILURE: If few pages found, the site may block crawling — try a different country. If timeout, reduce depth or limit.",
+      "Crawl a website recursively via BFS from a starting URL to configurable depth. Returns all discovered URLs with metadata, page titles, and optionally page content + extracted fields inline.\n\nWHEN TO USE: Full-site scraping, sitemap generation, content indexing, competitive analysis — when you need MORE than a single page.\nUSE novada_proxy_map INSTEAD IF: You only need links from ONE page.\nUSE novada_proxy_batch_fetch INSTEAD IF: You already have the URLs and just need content.\nWORKFLOW: crawl(url, max_pages=20, max_depth=3, include_content=true) → get full site content in one call.\nFILTERING: Use include_patterns/exclude_patterns to control which URLs are followed (e.g. include_patterns:['/blog/'] to crawl only blog posts).\nJS-HEAVY SITES: Set render='render' to use Chromium for SPAs — costs 5 credits/page instead of 1.\nEXTRACTION: Pass extract_fields=['title','description','author'] to get structured fields from every page.\nRATE LIMITING: Default 2 req/sec. Increase rate_limit for faster crawls on permissive sites.\nCACHING: Pages already in cache from prior fetch/map/crawl calls cost 0 credits.\nON FAILURE: If few pages found, the site may block crawling — try a different country or render='render'. If timeout, reduce max_depth or max_pages.",
     inputSchema: {
       type: "object" as const,
       properties: {
-        url:             { type: "string", description: "Starting URL (domain root recommended for broadest coverage)" },
-        depth:           { type: "number", default: 2, minimum: 1, maximum: 5, description: "Max crawl depth (1=same as map, 2+=recursive). Default 2." },
-        limit:           { type: "number", default: 50, minimum: 10, maximum: 200, description: "Max total URLs to discover (10-200). Default 50." },
-        include_content: { type: "boolean", default: false, description: "Include page content in response (default: false = URLs only, fast). Set true for inline content (slower, 1 credit per page)." },
-        country:         { type: "string", description: "2-letter country code for geo-targeting (e.g. US, DE, JP)" },
-        timeout:         { type: "number", default: 60, description: "Per-page timeout in seconds (1-120)" },
-        format:          { type: "string", enum: ["markdown", "raw"], default: "markdown", description: "Content format when include_content=true" },
+        url:              { type: "string", description: "Starting URL (domain root recommended for broadest coverage)" },
+        max_pages:        { type: "number", default: 10, minimum: 1, maximum: 100, description: "Max pages to crawl (1-100). Default 10." },
+        max_depth:        { type: "number", default: 3, minimum: 1, maximum: 5, description: "Max link-follow depth from start URL (1-5). Default 3." },
+        include_patterns: { type: "array", items: { type: "string" }, description: "Regex patterns — only follow URLs matching at least one pattern. Example: ['/blog/', '/docs/'] to crawl only blog and docs sections." },
+        exclude_patterns: { type: "array", items: { type: "string" }, description: "Regex patterns — skip URLs matching any pattern. Example: ['/tag/', '/author/', '\\\\?page='] to skip taxonomy and pagination pages." },
+        render:           { type: "string", enum: ["none", "render", "browser"], default: "none", description: "Render mode: 'none' = proxy fetch (fast, 1 credit/page), 'render'/'browser' = Chromium JS rendering (5 credits/page). Use for SPAs." },
+        output_format:    { type: "string", enum: ["markdown", "html", "text"], default: "markdown", description: "Content format: markdown (clean, default), html (full HTML), text (plain text, no links/markup)." },
+        extract_fields:   { type: "array", items: { type: "string" }, description: "Fields to extract from each page: title, description, author, image, date, etc. Returns structured key-value map per page." },
+        include_content:  { type: "boolean", default: false, description: "Include full page content in response (default: false = URLs + metadata only). Set true for inline content." },
+        rate_limit:       { type: "number", default: 2, minimum: 0.5, maximum: 10, description: "Max requests per second (0.5-10). Default 2. Increase for faster crawls on permissive sites." },
+        country:          { type: "string", description: "2-letter country code for geo-targeting (e.g. US, DE, JP)" },
+        timeout:          { type: "number", default: 60, description: "Per-page timeout in seconds (1-120)" },
+        depth:            { type: "number", description: "[Legacy] Alias for max_depth. Use max_depth instead." },
+        limit:            { type: "number", description: "[Legacy] Alias for max_pages. Use max_pages instead." },
+        format:           { type: "string", enum: ["markdown", "raw"], description: "[Legacy] Alias for output_format. Use output_format instead." },
       },
       required: ["url"],
     },
@@ -327,8 +335,14 @@ class NovadaProxyServer {
           }
           case "novada_proxy_crawl": {
             if (!proxyContext) return this.missingProxyError();
+            const crawlParams = validateCrawlParams(raw);
+            // Inject browser_ws if render mode is requested
+            if (crawlParams.render && crawlParams.render !== "none") {
+              if (!NOVADA_BROWSER_WS) return this.missingBrowserWsError();
+              crawlParams.browser_ws = NOVADA_BROWSER_WS;
+            }
             result = await novadaProxyCrawl(
-              validateCrawlParams(raw),
+              crawlParams,
               proxyContext.adapter,
               proxyContext.credentials
             );
