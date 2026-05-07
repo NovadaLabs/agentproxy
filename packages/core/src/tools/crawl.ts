@@ -8,7 +8,7 @@ import { SAFE_COUNTRY, QUOTA_NOTE } from "../validation.js";
 export interface CrawlParams {
   url: string;              // Starting URL
   depth?: number;           // Max depth (default 2, max 5)
-  limit?: number;           // Max total URLs to crawl (default 50, max 200)
+  limit?: number;           // [Legacy] Max total URLs to crawl (default 10, max 200)
   max_pages?: number;       // Alias for limit (default 10, max 100) — takes precedence if both set
   max_depth?: number;       // Alias for depth — takes precedence if both set
   include_content?: boolean; // Return page content too, not just URLs (default false)
@@ -45,7 +45,7 @@ export interface CrawlPageResult {
  */
 function extractInternalLinks(
   html: string,
-  origin: string,
+  pageUrl: string,
   hostname: string,
   seen: Set<string>,
   includePatterns?: RegExp[],
@@ -63,7 +63,7 @@ function extractInternalLinks(
 
     let resolved: string;
     try {
-      resolved = new URL(raw, origin).toString();
+      resolved = new URL(raw, pageUrl).toString();
     } catch {
       continue; // skip malformed hrefs
     }
@@ -227,6 +227,9 @@ class RateLimiter {
       this.tokens--;
       return;
     }
+    if (this.waitQueue.length >= 100) {
+      throw new Error("Rate limiter queue full — too many concurrent requests");
+    }
     return new Promise<void>(resolve => {
       this.waitQueue.push(resolve);
       this.scheduleDrain();
@@ -331,8 +334,9 @@ export async function novadaProxyCrawl(
   credentials: ProxyCredentials
 ): Promise<string> {
   // Resolve aliases: max_pages takes precedence over limit, max_depth over depth
-  const maxPages = params.max_pages ?? params.limit ?? 50;
-  const maxDepth = params.max_depth ?? params.depth ?? 2;
+  // Defaults: 10 pages, depth 3 (aligned with MCP schema)
+  const maxPages = params.max_pages ?? params.limit ?? 10;
+  const maxDepth = params.max_depth ?? params.depth ?? 3;
   const {
     url,
     include_content = false,
@@ -486,7 +490,7 @@ export async function novadaProxyCrawl(
 
           const { allLinks, newLinks } = extractInternalLinks(
             linksHtml,
-            origin,
+            item.url, // use current page URL as base for relative link resolution
             hostname,
             visited,
             compiledInclude,
@@ -687,6 +691,10 @@ export function validateCrawlParams(raw: Record<string, unknown>): CrawlParams {
       if (p.length > 100) {
         throw new Error(`include_patterns entries must be at most 100 characters (got ${p.length})`);
       }
+      // Reject nested quantifiers (ReDoS risk): (a+)+, (a*)+, (a{2,})*
+      if (/([+*}])\s*[)]\s*[+*{?]/.test(p) || /([+*])\s*[+*]/.test(p)) {
+        throw new Error(`include_patterns contains potentially unsafe nested quantifiers: ${p}`);
+      }
       try {
         new RegExp(p);
       } catch {
@@ -711,6 +719,9 @@ export function validateCrawlParams(raw: Record<string, unknown>): CrawlParams {
       }
       if (p.length > 100) {
         throw new Error(`exclude_patterns entries must be at most 100 characters (got ${p.length})`);
+      }
+      if (/([+*}])\s*[)]\s*[+*{?]/.test(p) || /([+*])\s*[+*]/.test(p)) {
+        throw new Error(`exclude_patterns contains potentially unsafe nested quantifiers: ${p}`);
       }
       try {
         new RegExp(p);
