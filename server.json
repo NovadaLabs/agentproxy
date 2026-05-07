@@ -1,9 +1,9 @@
 {
   "$schema": "https://static.modelcontextprotocol.io/schemas/2025-12-11/server.schema.json",
-  "name": "io.github.NovadaLabs/proxy4agents-mcp",
-  "description": "Residential proxy MCP for AI agents — geo-targeting, sticky sessions, anti-bot bypass.",
+  "name": "io.github.NovadaLabs/novada-proxy",
+  "description": "Novada Proxy — residential proxy MCP server for AI agents. Geo-targeting, sticky sessions, anti-bot bypass.",
   "repository": {
-    "url": "https://github.com/NovadaLabs/proxy4agent",
+    "url": "https://github.com/NovadaLabs/Novada-proxy",
     "source": "github"
   },
   "version": "1.8.2",

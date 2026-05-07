@@ -10,7 +10,7 @@ Route any HTTP request through 2M+ real home devices — Android phones, Windows
   <a href="https://npmjs.com/package/novada-proxy-mcp"><img src="https://img.shields.io/npm/v/novada-proxy-mcp?label=npm&color=CB3837&style=flat-square" alt="npm version"></a>
   <a href="https://npmjs.com/package/novada-proxy-mcp"><img src="https://img.shields.io/npm/dw/novada-proxy-mcp?label=downloads&color=blue&style=flat-square" alt="npm downloads"></a>
   <a href="LICENSE"><img src="https://img.shields.io/badge/license-MIT-green?style=flat-square" alt="License: MIT"></a>
-  <a href="https://github.com/NovadaLabs/proxy4agent/actions"><img src="https://github.com/NovadaLabs/proxy4agent/actions/workflows/ci.yml/badge.svg" alt="CI"></a>
+  <a href="https://github.com/NovadaLabs/Novada-proxy/actions"><img src="https://github.com/NovadaLabs/Novada-proxy/actions/workflows/ci.yml/badge.svg" alt="CI"></a>
   <a href="https://nodejs.org"><img src="https://img.shields.io/badge/node-%3E%3D18-brightgreen?style=flat-square" alt="Node.js"></a>
 </p>
 
@@ -23,9 +23,9 @@ Route any HTTP request through 2M+ real home devices — Android phones, Windows
 </p>
 
 <p align="center">
-  <a href="https://lobehub.com/mcp/novadalabs-proxy4agent"><img src="https://lobehub.com/badge/mcp/novadalabs-proxy4agent" alt="LobeHub MCP"></a>
-  <a href="https://lobehub.com/mcp/novadalabs-proxy4agent"><img src="https://lobehub.com/badge/mcp-full/novadalabs-proxy4agent?theme=light" alt="LobeHub MCP Full"></a>
-  <a href="https://smithery.ai/server/proxy4agent"><img src="https://smithery.ai/badge/proxy4agent" alt="Smithery"></a>
+  <a href="https://lobehub.com/mcp/novadalabs-novada-proxy"><img src="https://lobehub.com/badge/mcp/novadalabs-novada-proxy" alt="LobeHub MCP"></a>
+  <a href="https://lobehub.com/mcp/novadalabs-novada-proxy"><img src="https://lobehub.com/badge/mcp-full/novadalabs-novada-proxy?theme=light" alt="LobeHub MCP Full"></a>
+  <a href="https://smithery.ai/server/novada-proxy-mcp"><img src="https://smithery.ai/badge/novada-proxy-mcp" alt="Smithery"></a>
   <a href="https://mcp.run"><img src="https://img.shields.io/badge/MCP-Registry-blueviolet?style=flat-square" alt="MCP Registry"></a>
 </p>
 
@@ -717,7 +717,7 @@ Every error response includes a typed `error.code`, `recoverable` flag, and `age
 | **Windsurf** | MCP config -> `npx -y novada-proxy-mcp` |
 | **Cline** | MCP settings -> command: `npx`, args: `["-y", "novada-proxy-mcp"]` |
 | **Continue** | `.continue/config.json` -> mcpServers |
-| **Smithery** | [smithery.ai/server/proxy4agent](https://smithery.ai/server/proxy4agent) |
+| **Smithery** | [smithery.ai/server/novada-proxy-mcp](https://smithery.ai/server/novada-proxy-mcp) |
 | **Any MCP client** | stdio transport / `npx -y novada-proxy-mcp` |
 
 ---
@@ -783,7 +783,7 @@ Tested across 3 Novada proxy types with 33 real-world tests (2026-04-28):
 ## Feedback & Support
 
 - **Email:** [support@novada.com](mailto:support@novada.com)
-- **GitHub Issues:** [github.com/NovadaLabs/proxy4agent/issues](https://github.com/NovadaLabs/proxy4agent/issues)
+- **GitHub Issues:** [github.com/NovadaLabs/Novada-proxy/issues](https://github.com/NovadaLabs/Novada-proxy/issues)
 - **Website:** [novada.com](https://www.novada.com)
 
 ---
@@ -1323,7 +1323,7 @@ claude mcp add novada-proxy-mcp \
 ## 反馈与支持
 
 - **邮箱：** [support@novada.com](mailto:support@novada.com)
-- **GitHub Issues：** [github.com/NovadaLabs/proxy4agent/issues](https://github.com/NovadaLabs/proxy4agent/issues)
+- **GitHub Issues：** [github.com/NovadaLabs/Novada-proxy/issues](https://github.com/NovadaLabs/Novada-proxy/issues)
 - **官网：** [novada.com](https://www.novada.com)
 
 ---
