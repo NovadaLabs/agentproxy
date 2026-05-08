@@ -1,0 +1,18 @@
+{
+  "$schema": "https://anthropic.com/claude-code/marketplace.schema.json",
+  "name": "novada-proxy",
+  "description": "Residential proxy tools for AI agents — bypass anti-bot, geo-target 195+ countries",
+  "owner": {
+    "name": "NovadaLabs",
+    "email": "support@novada.com"
+  },
+  "plugins": [
+    {
+      "name": "novada-proxy",
+      "description": "Residential proxy tools for AI agents — fetch, crawl, search, extract through 2M+ IPs. Bypass Cloudflare/Akamai/DataDome, geo-target 195+ countries. Multi-provider: Novada, BrightData, Smartproxy, Oxylabs.",
+      "category": "development",
+      "source": ".",
+      "homepage": "https://github.com/NovadaLabs/Novada-proxy"
+    }
+  ]
+}
